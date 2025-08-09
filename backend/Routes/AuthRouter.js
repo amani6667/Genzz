@@ -26,8 +26,8 @@ const uploadimage = multer({ storage: storage });
 const transporter = nodemailer.createTransport({
     service: "Gmail",
     auth: {
-        user: "shihabmoni15@gmail.com",
-        pass: "ffsr wrli eglf szlp",
+        user: "support@genzz.casino",
+        pass: "ohko fimw bite vvnp",
     },
 });
 
