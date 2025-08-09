@@ -1,0 +1,1486 @@
+import React, { useState } from 'react';
+import {
+  FaFacebookF,
+  FaTwitter,
+  FaTelegramPlane,
+  FaWhatsapp,
+  FaCopy,
+  FaFire,
+  FaUserFriends,
+  FaGift,
+  FaChartBar,
+  FaMedal,
+  FaFutbol,
+  FaMoneyBillWave,
+  FaHandHoldingHeart,
+  FaGem,
+  FaCrosshairs,
+  FaBullseye,
+  FaHandsHelping,
+  FaFlag,
+  FaGamepad,
+  FaDownload,
+    FaCrown,
+     FaCoins,
+  FaThLarge,
+  FaHeadset,
+  FaTimes,
+  FaEye,
+} from 'react-icons/fa';
+import { FaEyeSlash } from 'react-icons/fa';
+const menuItems = [
+  { icon: <FaUserFriends className="text-blue-400" />, label: 'বন্ধুর আমন্ত্রণ' },
+  { icon: <FaGift className="text-purple-400" />, label: 'অফার' },
+  { icon: <FaChartBar className="text-green-400" />, label: 'চার্ট' },
+  { icon: <FaMoneyBillWave className="text-emerald-400" />, label: 'ডিপোজিট' },
+  { icon: <FaGamepad className="text-indigo-400" />, label: 'স্লট গেমস' },
+  { icon: <FaCrown className="text-yellow-400" />, label: 'HTO গেমস' },
+  { icon: <FaCoins className="text-orange-400" />, label: 'SLTO গেমস' },
+  { icon: <FaDownload className="text-violet-400" />, label: 'ডাউনলোড' },
+  { icon: <FaHeadset className="text-teal-400" />, label: 'সাপোর্ট' },
+];
+
+const leftMenuItems = [
+  'আমার অ্যাকাউন্ট',
+  'ডিপোজিট',
+  'উত্তোলন',
+  'বেটিং রেকর্ড',
+  'অ্যাকাউন্ট রেকর্ড',
+  'বন্ধুর আমন্ত্রণ করুন',
+];
+
+const Sidebar = () => {
+  const [showPopup, setShowPopup] = useState(false);
+  const [selectedMenu, setSelectedMenu] = useState(null);
+  const [activeLeftTab, setActiveLeftTab] = useState('আমার অ্যাকাউন্ট');
+  const [showInvitePopup, setShowInvitePopup] = useState(false);
+
+  const handleMenuClick = (item) => {
+    if (item.label === 'বন্ধুর আমন্ত্রণ') {
+      setShowInvitePopup(true);
+    } else {
+      setSelectedMenu(item);
+      setShowPopup(true);
+    }
+  };
+
+  const handleClosePopup = () => {
+    setShowPopup(false);
+    setShowInvitePopup(false);
+    setSelectedMenu(null);
+  };
+
+  return (
+    <>
+      <div className="bg-gray-900   w-[330px] h-full fixed top-[70px]  overflow-y-auto no-scrollbar left-0 px-4 py-6">
+        <div className="grid grid-cols-2 gap-4">
+          {menuItems.map((item, index) => (
+            <MenuCard key={index} item={item} onClick={() => handleMenuClick(item)} />
+          ))}
+        </div>
+      </div>
+
+      {showPopup && (
+        <Popup
+          onClose={handleClosePopup}
+          selectedMenu={selectedMenu}
+          activeLeftTab={activeLeftTab}
+          setActiveLeftTab={setActiveLeftTab}
+        />
+      )}
+
+      {showInvitePopup && (
+        <InvitePopup onClose={handleClosePopup} />
+      )}
+    </>
+  );
+};
+//  shadow-[0_4px_0_#1f2937]
+//     hover:shadow-[0_4px_0_#1f2937,inset_0_2px_8px_rgba(255,255,255,0.1)]
+//     active:shadow-[0_1px_0_#1f2937]
+//     active:translate-y-1 border border-gray-700
+const MenuCard = ({ item, onClick }) => (
+  <div
+    onClick={onClick}
+    className="bg-gray-800 hover:bg-gray-700 transition-all duration-300 text-white rounded-[10px] border-[1px] border-gray-700 p-4 flex flex-col items-center justify-center cursor-pointer 
+   "
+  >
+    <div className="text-2xl mb-2">{item.icon}</div>
+    <div className="text-xs text-center leading-tight font-medium text-gray-300">{item.label}</div>
+  </div>
+);
+
+const Popup = ({ onClose, selectedMenu, activeLeftTab, setActiveLeftTab }) => {
+  const tabs = ['সারাংশ', 'পুরস্কার', 'আয়', 'রেফার', 'আমন্ত্রণ তালিকা'];
+  const [selectedTab, setSelectedTab] = useState(tabs[0]);
+
+  return (
+    <div className="fixed top-0 left-0 inset-0 z-[100000000] w-full h-screen backdrop-blur-sm bg-black/50 flex items-center justify-center p-4">
+      <div className="bg-gray-900 text-white w-full max-w-6xl h-[90vh] rounded-xl shadow-2xl overflow-hidden relative transition-all duration-300 transform border border-gray-700">
+        <button 
+          className="absolute top-4 right-4 text-gray-400 hover:text-white text-xl z-10" 
+          onClick={onClose}
+        >
+          <FaTimes />
+        </button>
+
+        <div className="flex h-full">
+          <div className="w-64 bg-gray-800 text-white p-6 overflow-y-auto border-r border-gray-700">
+            <h2 className="text-xl font-bold mb-6 text-cyan-400">ব্যক্তিগত কেন্দ্র</h2>
+            <ul className="space-y-4">
+              {leftMenuItems.map((item, index) => (
+                <li
+                  key={index}
+                  className={`py-2 px-3 rounded-md cursor-pointer transition-colors ${
+                    item === activeLeftTab
+                      ? 'bg-cyan-500 text-gray-900 font-semibold'
+                      : 'hover:bg-gray-700'
+                  }`}
+                  onClick={() => setActiveLeftTab(item)}
+                >
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="flex-1 p-6 overflow-y-auto bg-gray-900">
+            {activeLeftTab === 'আমার অ্যাকাউন্ট' ? (
+              <AccountTabContent />
+            ) : activeLeftTab === 'ডিপোজিট' ? (
+              <DepositTabContent />
+            ) : activeLeftTab === 'উত্তোলন' ? (
+              <WithdrawalTabContent />
+            ) : activeLeftTab === 'বেটিং রেকর্ড' ? (
+              <BettingRecordTabContent />
+            ) : activeLeftTab === 'অ্যাকাউন্ট রেকর্ড' ? (
+              <AccountRecordTabContent />
+            ) : activeLeftTab === 'লাভ ও ক্ষতি' ? (
+              <ProfitLossTabContent />
+            ) : activeLeftTab === 'পুরস্কার কেন্দ্র' ? (
+              <RewardCenterTabContent />
+            ) : activeLeftTab === 'বন্ধুর আমন্ত্রণ করুন' ? (
+              <InviteFriendTabContent />
+            ) : activeLeftTab === 'মিশন' ? (
+              <MissionTabContent />
+            ) : activeLeftTab === 'অভ্যন্তরীণ বার্তা' ? (
+              <InternalMessageTabContent />
+            ) : (
+              <DefaultTabContent activeLeftTab={activeLeftTab} />
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const InvitePopup = ({ onClose }) => {
+  const [copied, setCopied] = useState(false);
+
+  const copyReferralLink = () => {
+    navigator.clipboard.writeText("https://example.com/ref/t4590050297");
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[10000] flex items-center justify-center backdrop-blur-sm bg-black/50 p-4">
+      <div className="bg-gray-800 text-white rounded-xl shadow-2xl max-w-md w-full relative border border-gray-700">
+        <button 
+          className="absolute top-4 right-4 text-gray-400 hover:text-white text-xl" 
+          onClick={onClose}
+        >
+          <FaTimes />
+        </button>
+        
+        <div className="p-6">
+          <h3 className="text-xl font-bold mb-4 text-cyan-400">বন্ধুকে আমন্ত্রণ করুন</h3>
+          
+          <div className="mb-6">
+            <p className="text-gray-300 mb-2">আপনার রেফারেল লিঙ্ক:</p>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                className="flex-1 p-2 border border-gray-600 rounded bg-gray-700 text-white text-sm"
+                value="https://example.com/ref/t4590050297"
+                readOnly
+              />
+              <button 
+                onClick={copyReferralLink}
+                className="bg-cyan-500 hover:bg-cyan-600 text-gray-900 px-3 py-2 rounded flex items-center gap-1 text-sm"
+              >
+                <FaCopy /> {copied ? 'কপি হয়েছে!' : 'কপি করুন'}
+              </button>
+            </div>
+          </div>
+          
+          <div className="mb-6">
+            <p className="text-gray-300 mb-2">সোশ্যাল মিডিয়ায় শেয়ার করুন:</p>
+            <div className="flex gap-3">
+              <button className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full transition-colors">
+                <FaFacebookF />
+              </button>
+              <button className="bg-blue-400 hover:bg-blue-500 text-white p-3 rounded-full transition-colors">
+                <FaTwitter />
+              </button>
+              <button className="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-full transition-colors">
+                <FaTelegramPlane />
+              </button>
+              <button className="bg-green-500 hover:bg-green-600 text-white p-3 rounded-full transition-colors">
+                <FaWhatsapp />
+              </button>
+            </div>
+          </div>
+          
+          <div className="bg-gray-700 p-4 rounded-lg border border-gray-600">
+            <h4 className="font-medium mb-2 text-cyan-400">আমন্ত্রণ নিয়ম</h4>
+            <ul className="list-disc pl-5 text-sm text-gray-300 space-y-1">
+              <li>প্রতিটি সফল আমন্ত্রণের জন্য আপনি 50 টাকা বোনাস পাবেন</li>
+              <li>আপনার আমন্ত্রিত বন্ধুকে ন্যূনতম 500 টাকা ডিপোজিট করতে হবে</li>
+              <li>আপনার আমন্ত্রিত বন্ধুকে ন্যূনতম 3টি বেট প্লেস করতে হবে</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AccountTabContent = () => {
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showTransactionPassword, setShowTransactionPassword] = useState(false);
+  const [currentLoginPassword, setCurrentLoginPassword] = useState('');
+  const [newLoginPassword, setNewLoginPassword] = useState('');
+  const [confirmLoginPassword, setConfirmLoginPassword] = useState('');
+  const [currentTransactionPassword, setCurrentTransactionPassword] = useState('');
+  const [newTransactionPassword, setNewTransactionPassword] = useState('');
+  const [confirmTransactionPassword, setConfirmTransactionPassword] = useState('');
+
+  const tabs = ['সারাংশ', 'পুরস্কার', 'আয়', 'রেফার', 'আমন্ত্রণ তালিকা', 'নিরাপত্তা'];
+  const [selectedTab, setSelectedTab] = useState(tabs[0]);
+
+  const copyReferralLink = () => {
+    navigator.clipboard.writeText("https://example.com/ref/t4590050297");
+    alert('রেফারেল লিঙ্ক কপি করা হয়েছে!');
+  };
+
+  const handleLoginPasswordChange = (e) => {
+    e.preventDefault();
+    alert('লগইন পাসওয়ার্ড সফলভাবে পরিবর্তন করা হয়েছে!');
+    setCurrentLoginPassword('');
+    setNewLoginPassword('');
+    setConfirmLoginPassword('');
+  };
+
+  const handleTransactionPasswordChange = (e) => {
+    e.preventDefault();
+    alert('লেনদেন পাসওয়ার্ড সফলভাবে পরিবর্তন করা হয়েছে!');
+    setCurrentTransactionPassword('');
+    setNewTransactionPassword('');
+    setConfirmTransactionPassword('');
+  };
+
+  return (
+    <div className="text-white">
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        {/* Profile Info */}
+        <div className="bg-gray-800 p-4 rounded-lg shadow col-span-1 border border-gray-700">
+          <div className="flex items-center gap-3">
+            <img
+              src="https://i.ibb.co/k6pqKkL/avatar.jpg"
+              alt="User"
+              className="w-14 h-14 rounded-full border-2 border-cyan-400"
+            />
+            <div>
+              <p className="text-sm font-semibold">t4590050297</p>
+              <p className="text-xs text-gray-400">যোগদানঃ ২০২৫-০৭-২৭</p>
+            </div>
+          </div>
+          <div className="mt-4 text-xl font-bold text-cyan-400">৳ 0.00</div>
+          <ul className="mt-4 space-y-2 text-sm text-gray-400">
+            <li>০ জমা দেওয়া অনুরোধ চলছে</li>
+            <li>০ উত্তোলন অনুরোধ চলছে</li>
+          </ul>
+        </div>
+
+        {/* Security Card */}
+        <div className="bg-gray-800 p-4 rounded-lg shadow col-span-2 border border-gray-700">
+          <h3 className="text-lg font-bold text-cyan-400 mb-2">নিম - নিরাপত্তা শতভাগ</h3>
+          <p className="text-sm text-gray-400 mb-3">স্কোর হল 16 পর্যন্ত। আপনার অ্যাকাউন্ট নিরাপত্তা সম্পূর্ণ হলে স্কোর পূর্ণ হবে।</p>
+          <div className="grid grid-cols-3 gap-2">
+            {['ব্যক্তিগত তথ্য', 'লগইন পাসওয়ার্ড', 'ই-ওয়ালেট বাঁধুন', 'লেনদেন পাসওয়ার্ড', 'লগআউট'].map((item, idx) => (
+              <div key={idx} className="flex items-center gap-2 text-sm">
+                <span className={`w-3 h-3 rounded-full ${item === 'লগআউট' ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                <span className="text-gray-300">{item}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex border-b border-gray-700 mb-6 overflow-x-auto">
+        {tabs.map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setSelectedTab(tab)}
+            className={`px-5 py-3 font-medium text-sm border-b-2 transition-colors whitespace-nowrap ${
+              selectedTab === tab
+                ? 'border-cyan-400 text-cyan-400'
+                : 'border-transparent text-gray-400 hover:text-cyan-400'
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      {selectedTab === 'সারাংশ' && (
+        <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+          <h3 className="text-lg font-semibold mb-4">অ্যাকাউন্ট সারাংশ</h3>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
+              <p className="text-sm text-gray-400">মোট ব্যালেন্স</p>
+              <p className="text-xl font-bold text-cyan-400">৳ 0.00</p>
+            </div>
+            <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
+              <p className="text-sm text-gray-400">বোনাস</p>
+              <p className="text-xl font-bold text-cyan-400">৳ 0.00</p>
+            </div>
+            <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
+              <p className="text-sm text-gray-400">লক করা</p>
+              <p className="text-xl font-bold text-cyan-400">৳ 0.00</p>
+            </div>
+          </div>
+          <div className="mt-4">
+            <h4 className="font-medium mb-2">সাম্প্রতিক লেনদেন</h4>
+            <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
+              <p className="text-center text-gray-500 py-4">কোন লেনদেন পাওয়া যায়নি</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedTab === 'পুরস্কার' && (
+        <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+          <h3 className="text-lg font-semibold mb-4">আপনার পুরস্কার</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
+              <p className="text-sm text-gray-400">উপলব্ধ বোনাস</p>
+              <p className="text-xl font-bold text-cyan-400">৳ 0.00</p>
+            </div>
+            <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
+              <p className="text-sm text-gray-400">মোট পুরস্কার</p>
+              <p className="text-xl font-bold text-cyan-400">৳ 0.00</p>
+            </div>
+          </div>
+          <div className="mt-4">
+            <h4 className="font-medium mb-2">পুরস্কার ইতিহাস</h4>
+            <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
+              <p className="text-center text-gray-500 py-4">কোন পুরস্কার ইতিহাস পাওয়া যায়নি</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedTab === 'আয়' && (
+        <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+          <h3 className="text-lg font-semibold mb-4">আয়ের বিবরণ</h3>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
+              <p className="text-sm text-gray-400">আজকের আয়</p>
+              <p className="text-xl font-bold text-cyan-400">৳ 0.00</p>
+            </div>
+            <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
+              <p className="text-sm text-gray-400">গতকালের আয়</p>
+              <p className="text-xl font-bold text-cyan-400">৳ 0.00</p>
+            </div>
+            <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
+              <p className="text-sm text-gray-400">এই মাসের আয়</p>
+              <p className="text-xl font-bold text-cyan-400">৳ 0.00</p>
+            </div>
+          </div>
+          <div className="mt-4">
+            <h4 className="font-medium mb-2">আয়ের ইতিহাস</h4>
+            <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
+              <p className="text-center text-gray-500 py-4">কোন আয়ের ইতিহাস পাওয়া যায়নি</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedTab === 'রেফার' && (
+        <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+          <h3 className="text-lg font-semibold mb-4">রেফারেল তথ্য</h3>
+          <div className="bg-gray-700 p-4 rounded shadow mb-4 border border-gray-600">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400">আপনার রেফারেল লিঙ্ক</p>
+                <p className="text-cyan-400">https://example.com/ref/t4590050297</p>
+              </div>
+              <button 
+                onClick={copyReferralLink}
+                className="bg-cyan-500 hover:bg-cyan-600 text-gray-900 px-3 py-1 rounded text-sm flex items-center gap-1"
+              >
+                <FaCopy /> কপি করুন
+              </button>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-4 mb-4">
+            <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
+              <p className="text-sm text-gray-400">মোট রেফারেল</p>
+              <p className="text-xl font-bold text-cyan-400">0</p>
+            </div>
+            <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
+              <p className="text-sm text-gray-400">সক্রিয় রেফারেল</p>
+              <p className="text-xl font-bold text-cyan-400">0</p>
+            </div>
+            <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
+              <p className="text-sm text-gray-400">রেফারেল বোনাস</p>
+              <p className="text-xl font-bold text-cyan-400">৳ 0.00</p>
+            </div>
+          </div>
+          <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
+            <h4 className="font-medium mb-2">সোশ্যাল মিডিয়ায় শেয়ার করুন</h4>
+            <div className="flex gap-2">
+              <button className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full transition-colors">
+                <FaFacebookF />
+              </button>
+              <button className="bg-blue-400 hover:bg-blue-500 text-white p-2 rounded-full transition-colors">
+                <FaTwitter />
+              </button>
+              <button className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full transition-colors">
+                <FaTelegramPlane />
+              </button>
+              <button className="bg-green-500 hover:bg-green-600 text-white p-2 rounded-full transition-colors">
+                <FaWhatsapp />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedTab === 'আমন্ত্রণ তালিকা' && (
+        <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+          <h3 className="text-lg font-semibold mb-4">আপনার আমন্ত্রিত বন্ধুদের তালিকা</h3>
+          <div className="bg-gray-700 rounded shadow border border-gray-600">
+            <div className="overflow-x-auto">
+              <table className="min-w-full">
+                <thead className="bg-gray-800">
+                  <tr>
+                    <th className="py-2 px-4 text-left text-sm border-b border-gray-600">ব্যবহারকারীর নাম</th>
+                    <th className="py-2 px-4 text-left text-sm border-b border-gray-600">যোগদানের তারিখ</th>
+                    <th className="py-2 px-4 text-left text-sm border-b border-gray-600">স্ট্যাটাস</th>
+                    <th className="py-2 px-4 text-left text-sm border-b border-gray-600">পুরস্কার</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td colSpan="4" className="py-4 text-center text-gray-500">
+                      কোন আমন্ত্রিত বন্ধু পাওয়া যায়নি
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedTab === 'নিরাপত্তা' && (
+        <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+          <h3 className="text-lg font-semibold mb-4">অ্যাকাউন্ট নিরাপত্তা</h3>
+          
+          {/* Login Password Change */}
+          <div className="bg-gray-700 p-4 rounded shadow mb-6 border border-gray-600">
+            <h4 className="font-medium mb-4 text-cyan-400">লগইন পাসওয়ার্ড পরিবর্তন করুন</h4>
+            <form onSubmit={handleLoginPasswordChange}>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">বর্তমান পাসওয়ার্ড</label>
+                  <div className="relative">
+                    <input
+                      type={showLoginPassword ? "text" : "password"}
+                      className="w-full p-2 border border-gray-600 rounded bg-gray-800 text-white text-sm"
+                      value={currentLoginPassword}
+                      onChange={(e) => setCurrentLoginPassword(e.target.value)}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-2 top-2 text-gray-500 hover:text-gray-300"
+                      onClick={() => setShowLoginPassword(!showLoginPassword)}
+                    >
+                      {showLoginPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">নতুন পাসওয়ার্ড</label>
+                  <div className="relative">
+                    <input
+                      type={showLoginPassword ? "text" : "password"}
+                      className="w-full p-2 border border-gray-600 rounded bg-gray-800 text-white text-sm"
+                      value={newLoginPassword}
+                      onChange={(e) => setNewLoginPassword(e.target.value)}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-2 top-2 text-gray-500 hover:text-gray-300"
+                      onClick={() => setShowLoginPassword(!showLoginPassword)}
+                    >
+                      {showLoginPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">পাসওয়ার্ড নিশ্চিত করুন</label>
+                  <div className="relative">
+                    <input
+                      type={showLoginPassword ? "text" : "password"}
+                      className="w-full p-2 border border-gray-600 rounded bg-gray-800 text-white text-sm"
+                      value={confirmLoginPassword}
+                      onChange={(e) => setConfirmLoginPassword(e.target.value)}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-2 top-2 text-gray-500 hover:text-gray-300"
+                      onClick={() => setShowLoginPassword(!showLoginPassword)}
+                    >
+                      {showLoginPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <button
+                type="submit"
+                className="bg-cyan-500 hover:bg-cyan-600 text-gray-900 px-4 py-2 rounded text-sm"
+              >
+                পাসওয়ার্ড পরিবর্তন করুন
+              </button>
+            </form>
+          </div>
+
+          {/* Transaction Password Change */}
+          <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
+            <h4 className="font-medium mb-4 text-cyan-400">লেনদেন পাসওয়ার্ড পরিবর্তন করুন</h4>
+            <form onSubmit={handleTransactionPasswordChange}>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">বর্তমান লেনদেন পাসওয়ার্ড</label>
+                  <div className="relative">
+                    <input
+                      type={showTransactionPassword ? "text" : "password"}
+                      className="w-full p-2 border border-gray-600 rounded bg-gray-800 text-white text-sm"
+                      value={currentTransactionPassword}
+                      onChange={(e) => setCurrentTransactionPassword(e.target.value)}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-2 top-2 text-gray-500 hover:text-gray-300"
+                      onClick={() => setShowTransactionPassword(!showTransactionPassword)}
+                    >
+                      {showTransactionPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">নতুন লেনদেন পাসওয়ার্ড</label>
+                  <div className="relative">
+                    <input
+                      type={showTransactionPassword ? "text" : "password"}
+                      className="w-full p-2 border border-gray-600 rounded bg-gray-800 text-white text-sm"
+                      value={newTransactionPassword}
+                      onChange={(e) => setNewTransactionPassword(e.target.value)}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-2 top-2 text-gray-500 hover:text-gray-300"
+                      onClick={() => setShowTransactionPassword(!showTransactionPassword)}
+                    >
+                      {showTransactionPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">পাসওয়ার্ড নিশ্চিত করুন</label>
+                  <div className="relative">
+                    <input
+                      type={showTransactionPassword ? "text" : "password"}
+                      className="w-full p-2 border border-gray-600 rounded bg-gray-800 text-white text-sm"
+                      value={confirmTransactionPassword}
+                      onChange={(e) => setConfirmTransactionPassword(e.target.value)}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-2 top-2 text-gray-500 hover:text-gray-300"
+                      onClick={() => setShowTransactionPassword(!showTransactionPassword)}
+                    >
+                      {showTransactionPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <button
+                type="submit"
+                className="bg-cyan-500 hover:bg-cyan-600 text-gray-900 px-4 py-2 rounded text-sm"
+              >
+                লেনদেন পাসওয়ার্ড পরিবর্তন করুন
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const DepositTabContent = () => {
+  const [amount, setAmount] = useState('');
+  const [activeProvider, setActiveProvider] = useState('bkash');
+  const [selectedMethod, setSelectedMethod] = useState('bkash');
+
+  const amounts = [100, 200, 300, 500, 1000, 3000, 5000, 10000, 20000, 25000, 30000];
+
+  return (
+    <div className="flex flex-col md:flex-row gap-4 bg-gray-800 p-4 rounded-lg border border-gray-700 max-w-6xl mx-auto">
+      {/* LEFT SIDE: Payment Method Tabs */}
+      <div className="w-full md:w-1/4 bg-gray-700 border border-gray-600 rounded p-3 space-y-3">
+        <div
+          className={`flex items-center p-2 rounded cursor-pointer border ${
+            activeProvider === 'bkash' ? 'bg-cyan-500 border-cyan-500 text-gray-900' : 'bg-gray-800 border-gray-600'
+          }`}
+          onClick={() => setActiveProvider('bkash')}
+        >
+          <img
+            src="https://images.5949390294.com/mcs-images/bank_type/BKASH/BN_2_20240312225413337.png"
+            alt="bkash"
+            className="w-8 h-8 mr-2"
+          />
+          <span className="font-medium">Bkash VIP</span>
+        </div>
+
+        <div
+          className={`flex items-center p-2 rounded cursor-pointer border ${
+            activeProvider === 'nagad' ? 'bg-cyan-500 border-cyan-500 text-gray-900' : 'bg-gray-800 border-gray-600'
+          }`}
+          onClick={() => setActiveProvider('nagad')}
+        >
+          <img
+            src="https://images.5949390294.com/mcs-images/bank_type/NAGAD/BN_2_20240312230148421.png"
+            alt="nagad"
+            className="w-8 h-8 mr-2"
+          />
+          <span className="font-medium">Nagad VIP</span>
+        </div>
+      </div>
+
+      {/* RIGHT SIDE: Deposit Form */}
+      <div className="w-full md:w-3/4">
+        {/* Top Warning */}
+        <div className="bg-gray-700 border border-cyan-500 text-cyan-400 p-3 rounded mb-4 text-sm">
+          ❗❗ NOTE : অনুগ্রহ করে আপনার ডিপোজিট করার পরে অবশ্যই আপনার Trx-ID আইডি সাবমিট করবেন। <br />
+          তাহলে খুব দ্রুত আপনার একাউন্টের মধ্যে টাকা যোগ হয়ে যাবে। ⚠️⚠️⚠️
+        </div>
+
+        {/* Sub-tabs (Only if Bkash Selected) */}
+        {activeProvider === 'bkash' && (
+          <div className="flex flex-wrap gap-2 mb-4">
+            {['ALO', 'SOO', 'G1P', 'LCK', 'SKP'].map((label) => (
+              <div
+                key={label}
+                className={`px-3 py-1 border rounded cursor-pointer ${
+                  label === 'ALO' ? 'bg-cyan-500 border-cyan-500 text-gray-900' : 'bg-gray-800 border-gray-600'
+                }`}
+              >
+                Bkash VIP | {label}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Black Warning */}
+        <div className="bg-gray-800 border border-cyan-500 text-cyan-400 p-3 rounded text-sm mb-4">
+          ⚠️ অনুগ্রহ করে সতর্ক থাকুন (যে সমস্ত ডিপোজিট পদ্ধতির প্রদানের জন্য Telegram বা Facebook এর মাধ্যমে দাবি করছে
+          তারা অনেক ফ্যাকার এসেছে। আমাদের অফিসিয়াল ডিপোজিটগুলো শুধুমাত্র প্ল্যাটফর্মের মধ্যে সম্পন্ন হয়।)
+        </div>
+
+        {/* Deposit Amount Buttons */}
+        <div className="mb-4">
+          <label className="block font-medium mb-2">জমার পরিমাণ:</label>
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 mb-2">
+            {amounts.map((amt) => (
+              <button
+                key={amt}
+                onClick={() => setAmount(amt)}
+                className="bg-gray-700 hover:bg-cyan-500 hover:text-gray-900 px-2 py-1 rounded text-sm text-center border border-gray-600"
+              >
+                {amt.toLocaleString()} ৳
+              </button>
+            ))}
+          </div>
+          <input
+            type="number"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            className="mt-3 w-full p-2 border border-gray-600 rounded text-sm bg-gray-800 text-white"
+            placeholder="জমার পরিমাণ লিখুন"
+          />
+          <p className="text-sm text-gray-400 mt-1">
+            সর্বনিম্ন পরিমাণ: ৳ 100, সর্বাধিক পরিমাণ: ৳ 30,000 <br />
+            জমার সময়: 24/24
+          </p>
+        </div>
+
+        {/* Payment Method Dropdown */}
+        <div className="mb-4">
+          <label className="block font-medium mb-2">প্রদান পদ্ধতি নির্বাচন করুন:</label>
+          <select
+            className="w-full p-2 border border-gray-600 rounded bg-gray-800 text-white"
+            value={selectedMethod}
+            onChange={(e) => setSelectedMethod(e.target.value)}
+          >
+            <option value="bkash">bKash</option>
+            <option value="nagad">Nagad</option>
+            <option value="rocket">Rocket</option>
+            <option value="bank">ব্যাংক ট্রান্সফার</option>
+          </select>
+        </div>
+
+        {/* Submit Button */}
+        <button className="bg-cyan-500 hover:bg-cyan-600 text-gray-900 py-2 px-4 rounded w-full text-lg">
+          জমার জন্য আবেদন করুন
+        </button>
+
+        {/* Deposit History */}
+        <div className="bg-gray-700 p-4 mt-6 rounded border border-gray-600">
+          <h4 className="font-medium mb-3">ডিপোজিট ইতিহাস</h4>
+          <table className="w-full text-sm border border-gray-600">
+            <thead className="bg-gray-800">
+              <tr>
+                <th className="py-2 px-4 text-left border-b border-gray-600">তারিখ</th>
+                <th className="py-2 px-4 text-left border-b border-gray-600">পরিমাণ</th>
+                <th className="py-2 px-4 text-left border-b border-gray-600">পদ্ধতি</th>
+                <th className="py-2 px-4 text-left border-b border-gray-600">স্ট্যাটাস</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colSpan="4" className="text-center py-4 text-gray-500">
+                  কোন ডিপোজিট ইতিহাস পাওয়া যায়নি
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const WithdrawalTabContent = () => {
+  const [amount, setAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('bkash');
+  const [accountNumber, setAccountNumber] = useState('');
+
+  return (
+    <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+      <h3 className="text-lg font-semibold mb-4">উত্তোলন</h3>
+      <div className="bg-gray-700 p-4 rounded shadow mb-4 border border-gray-600">
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-400 mb-1">পেমেন্ট মেথড</label>
+          <select
+            className="w-full p-2 border border-gray-600 rounded bg-gray-800 text-white"
+            value={paymentMethod}
+            onChange={(e) => setPaymentMethod(e.target.value)}
+          >
+            <option value="bkash">bKash</option>
+            <option value="nagad">Nagad</option>
+            <option value="rocket">Rocket</option>
+            <option value="bank">ব্যাংক ট্রান্সফার</option>
+          </select>
+        </div>
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-400 mb-1">অ্যাকাউন্ট নম্বর</label>
+          <input
+            type="text"
+            className="w-full p-2 border border-gray-600 rounded bg-gray-800 text-white"
+            placeholder="আপনার অ্যাকাউন্ট নম্বর লিখুন"
+            value={accountNumber}
+            onChange={(e) => setAccountNumber(e.target.value)}
+          />
+        </div>
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-400 mb-1">পরিমাণ (৳)</label>
+          <input
+            type="number"
+            className="w-full p-2 border border-gray-600 rounded bg-gray-800 text-white"
+            placeholder="উত্তোলন পরিমাণ লিখুন"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+          />
+        </div>
+        <button className="bg-cyan-500 hover:bg-cyan-600 text-gray-900 px-4 py-2 rounded w-full">অনুরোধ করুন</button>
+      </div>
+      <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
+        <h4 className="font-medium mb-2">উত্তোলন ইতিহাস</h4>
+        <div className="overflow-x-auto">
+          <table className="min-w-full border border-gray-600">
+            <thead className="bg-gray-800">
+              <tr>
+                <th className="py-2 px-4 text-left text-sm border-b border-gray-600">তারিখ</th>
+                <th className="py-2 px-4 text-left text-sm border-b border-gray-600">পরিমাণ</th>
+                <th className="py-2 px-4 text-left text-sm border-b border-gray-600">পদ্ধতি</th>
+                <th className="py-2 px-4 text-left text-sm border-b border-gray-600">স্ট্যাটাস</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colSpan="4" className="py-4 text-center text-gray-500">
+                  কোন উত্তোলন ইতিহাস পাওয়া যায়নি
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const BettingRecordTabContent = () => {
+  const [timeRange, setTimeRange] = useState('today');
+
+  return (
+    <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+      <h3 className="text-lg font-semibold mb-4">বেটিং রেকর্ড</h3>
+      <div className="bg-gray-700 p-4 rounded shadow mb-4 border border-gray-600">
+        <div className="flex gap-2 mb-4">
+          <button
+            className={`px-3 py-1 rounded text-sm ${timeRange === 'today' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'}`}
+            onClick={() => setTimeRange('today')}
+          >
+            আজ
+          </button>
+          <button
+            className={`px-3 py-1 rounded text-sm ${timeRange === 'yesterday' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'}`}
+            onClick={() => setTimeRange('yesterday')}
+          >
+            গতকাল
+          </button>
+          <button
+            className={`px-3 py-1 rounded text-sm ${timeRange === 'week' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'}`}
+            onClick={() => setTimeRange('week')}
+          >
+            এই সপ্তাহ
+          </button>
+          <button
+            className={`px-3 py-1 rounded text-sm ${timeRange === 'month' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'}`}
+            onClick={() => setTimeRange('month')}
+          >
+            এই মাস
+          </button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full border border-gray-600">
+            <thead className="bg-gray-800">
+              <tr>
+                <th className="py-2 px-4 text-left text-sm border-b border-gray-600">তারিখ</th>
+                <th className="py-2 px-4 text-left text-sm border-b border-gray-600">বেট ID</th>
+                <th className="py-2 px-4 text-left text-sm border-b border-gray-600">বেট পরিমাণ</th>
+                <th className="py-2 px-4 text-left text-sm border-b border-gray-600">লাভ/ক্ষতি</th>
+                <th className="py-2 px-4 text-left text-sm border-b border-gray-600">স্ট্যাটাস</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colSpan="5" className="py-4 text-center text-gray-500">
+                  কোন বেটিং রেকর্ড পাওয়া যায়নি
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AccountRecordTabContent = () => {
+  const [recordType, setRecordType] = useState('all');
+
+  return (
+    <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+      <h3 className="text-lg font-semibold mb-4">অ্যাকাউন্ট রেকর্ড</h3>
+      <div className="bg-gray-700 p-4 rounded shadow mb-4 border border-gray-600">
+        <div className="flex gap-2 mb-4">
+          <button
+            className={`px-3 py-1 rounded text-sm ${recordType === 'all' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'}`}
+            onClick={() => setRecordType('all')}
+          >
+            সব
+          </button>
+          <button
+            className={`px-3 py-1 rounded text-sm ${recordType === 'deposit' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'}`}
+            onClick={() => setRecordType('deposit')}
+          >
+            ডিপোজিট
+          </button>
+          <button
+            className={`px-3 py-1 rounded text-sm ${recordType === 'withdrawal' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'}`}
+            onClick={() => setRecordType('withdrawal')}
+          >
+            উত্তোলন
+          </button>
+          <button
+            className={`px-3 py-1 rounded text-sm ${recordType === 'bonus' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'}`}
+            onClick={() => setRecordType('bonus')}
+          >
+            বোনাস
+          </button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full border border-gray-600">
+            <thead className="bg-gray-800">
+              <tr>
+                <th className="py-2 px-4 text-left text-sm border-b border-gray-600">তারিখ</th>
+                <th className="py-2 px-4 text-left text-sm border-b border-gray-600">ধরণ</th>
+                <th className="py-2 px-4 text-left text-sm border-b border-gray-600">পরিমাণ</th>
+                <th className="py-2 px-4 text-left text-sm border-b border-gray-600">ব্যালেন্স</th>
+                <th className="py-2 px-4 text-left text-sm border-b border-gray-600">বিবরণ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colSpan="5" className="py-4 text-center text-gray-500">
+                  কোন অ্যাকাউন্ট রেকর্ড পাওয়া যায়নি
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ProfitLossTabContent = () => {
+  const [timeRange, setTimeRange] = useState('today');
+
+  return (
+    <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+      <h3 className="text-lg font-semibold mb-4">লাভ ও ক্ষতি</h3>
+      <div className="grid grid-cols-3 gap-4 mb-4">
+        <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
+          <p className="text-sm text-gray-400">আজকের লাভ/ক্ষতি</p>
+          <p className="text-xl font-bold text-cyan-400">৳ 0.00</p>
+        </div>
+        <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
+          <p className="text-sm text-gray-400">গতকালের লাভ/ক্ষতি</p>
+          <p className="text-xl font-bold text-cyan-400">৳ 0.00</p>
+        </div>
+        <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
+          <p className="text-sm text-gray-400">এই মাসের লাভ/ক্ষতি</p>
+          <p className="text-xl font-bold text-cyan-400">৳ 0.00</p>
+        </div>
+      </div>
+      <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
+        <div className="flex gap-2 mb-4">
+          <button
+            className={`px-3 py-1 rounded text-sm ${timeRange === 'today' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'}`}
+            onClick={() => setTimeRange('today')}
+          >
+            আজ
+          </button>
+          <button
+            className={`px-3 py-1 rounded text-sm ${timeRange === 'yesterday' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'}`}
+            onClick={() => setTimeRange('yesterday')}
+          >
+            গতকাল
+          </button>
+          <button
+            className={`px-3 py-1 rounded text-sm ${timeRange === 'week' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'}`}
+            onClick={() => setTimeRange('week')}
+          >
+            এই সপ্তাহ
+          </button>
+          <button
+            className={`px-3 py-1 rounded text-sm ${timeRange === 'month' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'}`}
+            onClick={() => setTimeRange('month')}
+          >
+            এই মাস
+          </button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full border border-gray-600">
+            <thead className="bg-gray-800">
+              <tr>
+                <th className="py-2 px-4 text-left text-sm border-b border-gray-600">তারিখ</th>
+                <th className="py-2 px-4 text-left text-sm border-b border-gray-600">বেট পরিমাণ</th>
+                <th className="py-2 px-4 text-left text-sm border-b border-gray-600">জয়/হার</th>
+                <th className="py-2 px-4 text-left text-sm border-b border-gray-600">লাভ/ক্ষতি</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colSpan="4" className="py-4 text-center text-gray-500">
+                  কোন লাভ/ক্ষতির রেকর্ড পাওয়া যায়নি
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const RewardCenterTabContent = () => {
+  const [activeTab, setActiveTab] = useState('available');
+
+  return (
+    <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+      <h3 className="text-lg font-semibold mb-4">পুরস্কার কেন্দ্র</h3>
+      <div className="bg-gray-700 p-4 rounded shadow mb-4 border border-gray-600">
+        <div className="flex gap-2 mb-4">
+          <button
+            className={`px-3 py-1 rounded text-sm ${activeTab === 'available' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'}`}
+            onClick={() => setActiveTab('available')}
+          >
+            উপলব্ধ পুরস্কার
+          </button>
+          <button
+            className={`px-3 py-1 rounded text-sm ${activeTab === 'claimed' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'}`}
+            onClick={() => setActiveTab('claimed')}
+          >
+            দাবিকৃত পুরস্কার
+          </button>
+          <button
+            className={`px-3 py-1 rounded text-sm ${activeTab === 'history' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'}`}
+            onClick={() => setActiveTab('history')}
+          >
+            পুরস্কার ইতিহাস
+          </button>
+        </div>
+        {activeTab === 'available' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3].map((item) => (
+              <div key={item} className="border border-gray-600 rounded-lg p-4 bg-gray-800">
+                <div className="flex justify-between items-start mb-2">
+                  <h4 className="font-medium">সাইন আপ বোনাস</h4>
+                  <span className="bg-cyan-500 text-gray-900 text-xs px-2 py-1 rounded">নতুন</span>
+                </div>
+                <p className="text-sm text-gray-400 mb-3">নতুন অ্যাকাউন্টের জন্য 100% বোনাস</p>
+                <div className="flex justify-between items-center">
+                  <span className="text-cyan-400 font-bold">৳ 500</span>
+                  <button className="bg-cyan-500 hover:bg-cyan-600 text-gray-900 px-3 py-1 rounded text-sm">দাবি করুন</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        {activeTab === 'claimed' && (
+          <div className="overflow-x-auto">
+            <table className="min-w-full border border-gray-600">
+              <thead className="bg-gray-800">
+                <tr>
+                  <th className="py-2 px-4 text-left text-sm border-b border-gray-600">পুরস্কার</th>
+                  <th className="py-2 px-4 text-left text-sm border-b border-gray-600">পরিমাণ</th>
+                  <th className="py-2 px-4 text-left text-sm border-b border-gray-600">দাবির তারিখ</th>
+                  <th className="py-2 px-4 text-left text-sm border-b border-gray-600">স্ট্যাটাস</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colSpan="4" className="py-4 text-center text-gray-500">
+                    কোন দাবিকৃত পুরস্কার পাওয়া যায়নি
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
+        {activeTab === 'history' && (
+          <div className="overflow-x-auto">
+            <table className="min-w-full border border-gray-600">
+              <thead className="bg-gray-800">
+                <tr>
+                  <th className="py-2 px-4 text-left text-sm border-b border-gray-600">তারিখ</th>
+                  <th className="py-2 px-4 text-left text-sm border-b border-gray-600">পুরস্কার</th>
+                  <th className="py-2 px-4 text-left text-sm border-b border-gray-600">পরিমাণ</th>
+                  <th className="py-2 px-4 text-left text-sm border-b border-gray-600">স্ট্যাটাস</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colSpan="4" className="py-4 text-center text-gray-500">
+                    কোন পুরস্কার ইতিহাস পাওয়া যায়নি
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const InviteFriendTabContent = () => {
+  const [activeTab, setActiveTab] = useState('invite');
+
+  return (
+    <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+      <h3 className="text-lg font-semibold mb-4">বন্ধুর আমন্ত্রণ</h3>
+      <div className="bg-gray-700 p-4 rounded shadow mb-4 border border-gray-600">
+        <div className="flex gap-2 mb-4">
+          <button
+            className={`px-3 py-1 rounded text-sm ${activeTab === 'invite' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'}`}
+            onClick={() => setActiveTab('invite')}
+          >
+            আমন্ত্রণ
+          </button>
+          <button
+            className={`px-3 py-1 rounded text-sm ${activeTab === 'list' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'}`}
+            onClick={() => setActiveTab('list')}
+          >
+            আমন্ত্রিত তালিকা
+          </button>
+          <button
+            className={`px-3 py-1 rounded text-sm ${activeTab === 'reward' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'}`}
+            onClick={() => setActiveTab('reward')}
+          >
+            পুরস্কার
+          </button>
+        </div>
+        {activeTab === 'invite' && (
+          <div>
+            <div className="mb-4 p-4 bg-gray-800 rounded-lg border border-gray-600">
+              <h4 className="font-medium mb-2">আপনার রেফারেল লিঙ্ক</h4>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  className="flex-1 p-2 border border-gray-600 rounded bg-gray-700 text-white"
+                  value="https://example.com/ref/t4590050297"
+                  readOnly
+                />
+                <button className="bg-cyan-500 hover:bg-cyan-600 text-gray-900 px-3 py-2 rounded flex items-center gap-1">
+                  <FaCopy /> কপি
+                </button>
+              </div>
+            </div>
+            <div className="mb-4">
+              <h4 className="font-medium mb-2">সোশ্যাল মিডিয়ায় শেয়ার করুন</h4>
+              <div className="flex gap-2">
+                <button className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full transition-colors">
+                  <FaFacebookF />
+                </button>
+                <button className="bg-blue-400 hover:bg-blue-500 text-white p-2 rounded-full transition-colors">
+                  <FaTwitter />
+                </button>
+                <button className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full transition-colors">
+                  <FaTelegramPlane />
+                </button>
+                <button className="bg-green-500 hover:bg-green-600 text-white p-2 rounded-full transition-colors">
+                  <FaWhatsapp />
+                </button>
+              </div>
+            </div>
+            <div className="p-4 bg-gray-800 rounded-lg border border-gray-600">
+              <h4 className="font-medium mb-2">আমন্ত্রণ নিয়ম</h4>
+              <ul className="list-disc pl-5 text-sm text-gray-400 space-y-1">
+                <li>প্রতিটি সফল আমন্ত্রণের জন্য আপনি 50 টাকা বোনাস পাবেন</li>
+                <li>আপনার আমন্ত্রিত বন্ধুকে ন্যূনতম 500 টাকা ডিপোজিট করতে হবে</li>
+                <li>আপনার আমন্ত্রিত বন্ধুকে ন্যূনতম 3টি বেট প্লেস করতে হবে</li>
+              </ul>
+            </div>
+          </div>
+        )}
+        {activeTab === 'list' && (
+          <div className="overflow-x-auto">
+            <table className="min-w-full border border-gray-600">
+              <thead className="bg-gray-800">
+                <tr>
+                  <th className="py-2 px-4 text-left text-sm border-b border-gray-600">ব্যবহারকারীর নাম</th>
+                  <th className="py-2 px-4 text-left text-sm border-b border-gray-600">যোগদানের তারিখ</th>
+                  <th className="py-2 px-4 text-left text-sm border-b border-gray-600">স্ট্যাটাস</th>
+                  <th className="py-2 px-4 text-left text-sm border-b border-gray-600">পুরস্কার</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colSpan="4" className="py-4 text-center text-gray-500">
+                    কোন আমন্ত্রিত বন্ধু পাওয়া যায়নি
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
+        {activeTab === 'reward' && (
+          <div>
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="bg-gray-800 p-4 rounded shadow border border-gray-600">
+                <p className="text-sm text-gray-400">মোট আমন্ত্রণ</p>
+                <p className="text-xl font-bold text-cyan-400">0</p>
+              </div>
+              <div className="bg-gray-800 p-4 rounded shadow border border-gray-600">
+                <p className="text-sm text-gray-400">মোট পুরস্কার</p>
+                <p className="text-xl font-bold text-cyan-400">৳ 0.00</p>
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full border border-gray-600">
+                <thead className="bg-gray-800">
+                  <tr>
+                    <th className="py-2 px-4 text-left text-sm border-b border-gray-600">তারিখ</th>
+                    <th className="py-2 px-4 text-left text-sm border-b border-gray-600">আমন্ত্রিত বন্ধু</th>
+                    <th className="py-2 px-4 text-left text-sm border-b border-gray-600">পুরস্কার</th>
+                    <th className="py-2 px-4 text-left text-sm border-b border-gray-600">স্ট্যাটাস</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td colSpan="4" className="py-4 text-center text-gray-500">
+                      কোন পুরস্কার রেকর্ড পাওয়া যায়নি
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const MissionTabContent = () => {
+  const [activeTab, setActiveTab] = useState('daily');
+
+  return (
+    <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+      <h3 className="text-lg font-semibold mb-4">মিশন</h3>
+      <div className="bg-gray-700 p-4 rounded shadow mb-4 border border-gray-600">
+        <div className="flex gap-2 mb-4">
+          <button
+            className={`px-3 py-1 rounded text-sm ${activeTab === 'daily' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'}`}
+            onClick={() => setActiveTab('daily')}
+          >
+            দৈনিক
+          </button>
+          <button
+            className={`px-3 py-1 rounded text-sm ${activeTab === 'weekly' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'}`}
+            onClick={() => setActiveTab('weekly')}
+          >
+            সাপ্তাহিক
+          </button>
+          <button
+            className={`px-3 py-1 rounded text-sm ${activeTab === 'monthly' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'}`}
+            onClick={() => setActiveTab('monthly')}
+          >
+            মাসিক
+          </button>
+          <button
+            className={`px-3 py-1 rounded text-sm ${activeTab === 'achievement' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'}`}
+            onClick={() => setActiveTab('achievement')}
+          >
+            অর্জন
+          </button>
+        </div>
+        {activeTab === 'daily' && (
+          <div className="space-y-4">
+            {[1, 2, 3].map((item) => (
+              <div key={item} className="border border-gray-600 rounded-lg p-4 flex items-center justify-between bg-gray-800">
+                <div>
+                  <h4 className="font-medium">প্রথম ডিপোজিট</h4>
+                  <p className="text-sm text-gray-400">আজকে প্রথম ডিপোজিট করুন</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-cyan-400 font-bold">৳ 50</span>
+                  <button className="bg-cyan-500 hover:bg-cyan-600 text-gray-900 px-3 py-1 rounded text-sm">দাবি করুন</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        {activeTab === 'weekly' && (
+          <div className="space-y-4">
+            {[1, 2].map((item) => (
+              <div key={item} className="border border-gray-600 rounded-lg p-4 flex items-center justify-between bg-gray-800">
+                <div>
+                  <h4 className="font-medium">সাপ্তাহিক বেটিং</h4>
+                  <p className="text-sm text-gray-400">এই সপ্তাহে 10টি বেট পূর্ণ করুন</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-cyan-400 font-bold">৳ 100</span>
+                  <button className="bg-gray-600 text-gray-400 px-3 py-1 rounded text-sm" disabled>
+                    চলমান
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        {activeTab === 'monthly' && (
+          <div className="space-y-4">
+            <div className="border border-gray-600 rounded-lg p-4 flex items-center justify-between bg-gray-800">
+              <div>
+                <h4 className="font-medium">মাসিক ডিপোজিট</h4>
+                <p className="text-sm text-gray-400">এই মাসে 5000 টাকা ডিপোজিট করুন</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-cyan-400 font-bold">৳ 500</span>
+                <button className="bg-gray-600 text-gray-400 px-3 py-1 rounded text-sm" disabled>
+                  চলমান
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {activeTab === 'achievement' && (
+          <div className="overflow-x-auto">
+            <table className="min-w-full border border-gray-600">
+              <thead className="bg-gray-800">
+                <tr>
+                  <th className="py-2 px-4 text-left text-sm border-b border-gray-600">মিশন</th>
+                  <th className="py-2 px-4 text-left text-sm border-b border-gray-600">অগ্রগতি</th>
+                  <th className="py-2 px-4 text-left text-sm border-b border-gray-600">পুরস্কার</th>
+                  <th className="py-2 px-4 text-left text-sm border-b border-gray-600">স্ট্যাটাস</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colSpan="4" className="py-4 text-center text-gray-500">
+                    কোন অর্জন রেকর্ড পাওয়া যায়নি
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const InternalMessageTabContent = () => {
+  const [activeTab, setActiveTab] = useState('inbox');
+
+  return (
+    <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+      <h3 className="text-lg font-semibold mb-4">অভ্যন্তরীণ বার্তা</h3>
+      <div className="bg-gray-700 p-4 rounded shadow mb-4 border border-gray-600">
+        <div className="flex gap-2 mb-4">
+          <button
+            className={`px-3 py-1 rounded text-sm ${activeTab === 'inbox' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'}`}
+            onClick={() => setActiveTab('inbox')}
+          >
+            ইনবক্স
+          </button>
+          <button
+            className={`px-3 py-1 rounded text-sm ${activeTab === 'sent' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'}`}
+            onClick={() => setActiveTab('sent')}
+          >
+            প্রেরিত
+          </button>
+          <button
+            className={`px-3 py-1 rounded text-sm ${activeTab === 'compose' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'}`}
+            onClick={() => setActiveTab('compose')}
+          >
+            নতুন বার্তা
+          </button>
+        </div>
+        {activeTab === 'inbox' && (
+          <div className="overflow-x-auto">
+            <table className="min-w-full border border-gray-600">
+              <thead className="bg-gray-800">
+                <tr>
+                  <th className="py-2 px-4 text-left text-sm border-b border-gray-600">প্রেরক</th>
+                  <th className="py-2 px-4 text-left text-sm border-b border-gray-600">বিষয়</th>
+                  <th className="py-2 px-4 text-left text-sm border-b border-gray-600">তারিখ</th>
+                  <th className="py-2 px-4 text-left text-sm border-b border-gray-600">স্ট্যাটাস</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colSpan="4" className="py-4 text-center text-gray-500">
+                    কোন ইনবক্স বার্তা পাওয়া যায়নি
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
+        {activeTab === 'sent' && (
+          <div className="overflow-x-auto">
+            <table className="min-w-full border border-gray-600">
+              <thead className="bg-gray-800">
+                <tr>
+                  <th className="py-2 px-4 text-left text-sm border-b border-gray-600">প্রাপক</th>
+                  <th className="py-2 px-4 text-left text-sm border-b border-gray-600">বিষয়</th>
+                  <th className="py-2 px-4 text-left text-sm border-b border-gray-600">তারিখ</th>
+                  <th className="py-2 px-4 text-left text-sm border-b border-gray-600">স্ট্যাটাস</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colSpan="4" className="py-4 text-center text-gray-500">
+                    কোন প্রেরিত বার্তা পাওয়া যায়নি
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
+        {activeTab === 'compose' && (
+          <div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-400 mb-1">প্রাপক</label>
+              <input
+                type="text"
+                className="w-full p-2 border border-gray-600 rounded bg-gray-800 text-white"
+                placeholder="প্রাপকের ব্যবহারকারীর নাম লিখুন"
+              />
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-400 mb-1">বিষয়</label>
+              <input
+                type="text"
+                className="w-full p-2 border border-gray-600 rounded bg-gray-800 text-white"
+                placeholder="বার্তার বিষয় লিখুন"
+              />
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-400 mb-1">বার্তা</label>
+              <textarea
+                className="w-full p-2 border border-gray-600 rounded bg-gray-800 text-white"
+                rows="5"
+                placeholder="আপনার বার্তা লিখুন..."
+              ></textarea>
+            </div>
+            <button className="bg-cyan-500 hover:bg-cyan-600 text-gray-900 px-4 py-2 rounded">প্রেরণ করুন</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const DefaultTabContent = ({ activeLeftTab }) => {
+  return (
+    <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+      <h3 className="text-lg font-semibold mb-4">{activeLeftTab}</h3>
+      <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
+        <p className="text-center text-gray-500 py-8">এই বিভাগটি উন্নয়নাধীন রয়েছে</p>
+      </div>
+    </div>
+  );
+};
+
+export default Sidebar;
