@@ -210,28 +210,50 @@ const UserSchema = new Schema({
     }],
 
     // ========== REFERRAL SYSTEM ==========
-    referralCode: {
-        type: String,
-        unique: true,
-        sparse: true
-    },
-    referredBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-        default: null
-    },
-    referralEarnings: {
-        type: Number,
-        default: 0
-    },
-    referralCount: {
-        type: Number,
-        default: 0
-    },
-    referralUsers: [{
+  // ========== REFERRAL SYSTEM ==========
+referralCode: {
+    type: String,
+    unique: true,
+    sparse: true
+},
+referredBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    default: null
+},
+referralEarnings: {
+    type: Number,
+    default: 0
+},
+referralCount: {
+    type: Number,
+    default: 0
+},
+referralUsers: [{
+    user: { 
         type: mongoose.Schema.Types.ObjectId,
         ref: "User"
-    }],
+    },
+    joinedAt: {
+        type: Date,
+        default: Date.now
+    },
+    earnedAmount: {
+        type: Number,
+        default: 0
+    }
+}],
+referralTracking: [{
+    referralCodeUsed: String,
+    referredUser: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User"
+    },
+    timestamp: {
+        type: Date,
+        default: Date.now
+    }
+}],
 
     // ========== HISTORIES ==========
     betHistory: [{

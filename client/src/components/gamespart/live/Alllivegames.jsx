@@ -12,10 +12,6 @@ const GameCard = ({ game }) => (
       src={`${API_BASE_URL}/images/${game.imageUrl}`}
       alt={game.gameName}
       className="w-full h-full min-h-[120px] sm:min-h-[160px] md:min-h-[200px] lg:min-h-[260px] object-cover transition-transform duration-300 group-hover:scale-105"
-      onError={(e) => {
-        e.target.onerror = null; 
-        e.target.src = 'https://via.placeholder.com/300x200?text=Game+Image';
-      }}
     />
 
     {/* Gradient Overlay */}

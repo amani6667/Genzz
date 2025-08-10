@@ -13,11 +13,6 @@ const GameCard = ({ game }) => (
         src={`${API_BASE_URL}/images/${game.imageUrl}`}
         alt={game.gameName}
         className="w-full h-[160px] sm:h-[180px] md:h-[200px] lg:h-[220px] object-cover transition-transform duration-500 group-hover:scale-110"
-        onError={(e) => {
-          e.target.onerror = null;
-          e.target.src = 'https://via.placeholder.com/300x200?text=Game+Image';
-          e.target.className += ' bg-gray-700';
-        }}
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
     </div>

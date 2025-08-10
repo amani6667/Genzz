@@ -227,9 +227,13 @@ router.post('/oneclick-login', async (req, res) => {
  * @route POST /auth/signup
  * @desc User registration
  */
+/**
+ * @route POST /auth/signup
+ * @desc User registration with referral tracking
+ */
 router.post('/signup', async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email, password, referralCode } = req.body;
 
         // Basic validation
         if (!email) {
@@ -260,7 +264,6 @@ router.post('/signup', async (req, res) => {
         let usernameExists = true;
         let attempts = 0;
         
-        // Keep generating until we find a unique username or reach max attempts
         while (usernameExists && attempts < 10) {
             username = generateUsername();
             const user = await UserModel.findOne({ username });
@@ -275,21 +278,55 @@ router.post('/signup', async (req, res) => {
             });
         }
 
+        // Check referral code if provided
+        let referrer = null;
+        if (referralCode) {
+            referrer = await UserModel.findOne({ referralCode });
+            if (!referrer) {
+                return res.status(400).json({
+                    success: false,
+                    message: "অবৈধ রেফারেল কোড" // Invalid referral code
+                });
+            }
+        }
+
         // Create new user
         const hashedPassword = await bcrypt.hash(password, 10);
         const newUser = new UserModel({
             username,
             email,
-            password,
+            password: hashedPassword,
             player_id: 'PL' + Math.random().toString(36).substr(2, 8).toUpperCase(),
             referralCode: 'REF' + Math.random().toString(36).substr(2, 6).toUpperCase(),
             status: 'active',
             balance: 0,
             currency: 'BDT',
-            language: 'bn'
+            language: 'bn',
+            referredBy: referrer ? referrer._id : null
         });
 
         await newUser.save();
+
+        // Update referrer's information if referral code was used
+        if (referrer) {
+            await UserModel.findByIdAndUpdate(referrer._id, {
+                $inc: { referralCount: 1 },
+                $push: { 
+                    referralUsers: {
+                        user: newUser._id,
+                        earnedAmount: 0 // You can set initial bonus here if needed
+                    },
+                    referralTracking: {
+                        referralCodeUsed: referralCode,
+                        referredUser: newUser._id
+                    }
+                }
+            });
+
+            // Optional: Add referral bonus to new user
+            // newUser.balance += 100; // Example bonus amount
+            // await newUser.save();
+        }
 
         // Generate token
         const token = jwt.sign(
@@ -311,7 +348,8 @@ router.post('/signup', async (req, res) => {
             success: true,
             message: "সফলভাবে নিবন্ধন করা হয়েছে", // Registration successful
             token,
-            user: userData
+            user: userData,
+            referredBy: referrer ? referrer.username : null
         });
 
     } catch (err) {
@@ -322,7 +360,6 @@ router.post('/signup', async (req, res) => {
         });
     }
 });
-
 /**
  * @route POST /auth/request-password-reset
  * @desc Request password reset OTP
@@ -761,5 +798,55 @@ router.get("/user/:id", ensureAuthenticated, async (req, res) => {
         });
     }
 });
+/**
+ * @route GET /auth/check-referral-code/:code
+ * @desc Check if referral code exists
+ */
 
+router.get('/check-referral-code/:code', async (req, res) => {
+    try {
+        const { code } = req.params;
+
+        if (!code) {
+            return res.status(400).json({
+                success: false,
+                message: "রেফারেল কোড প্রয়োজন" // Referral code is required
+            });
+        }
+
+        // Find user by referral code
+        const referrer = await UserModel.findOne({ 
+            referralCode: code,
+            status: 'active' // Only consider active users
+        }).select('username email avatar referralCount referralEarnings');
+
+        if (!referrer) {
+            return res.json({
+                success: false,
+                message: "অবৈধ রেফারেল কোড", // Invalid referral code
+                exists: false
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "রেফারেল কোড বৈধ", // Valid referral code
+            exists: true,
+            referrer: {
+                username: referrer.username,
+                email: referrer.email,
+                avatar: referrer.avatar,
+                referralCount: referrer.referralCount,
+                referralEarnings: referrer.referralEarnings
+            }
+        });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({
+            success: false,
+            message: "সার্ভার সমস্যা হয়েছে" // Server problem
+        });
+    }
+});
 module.exports = router;

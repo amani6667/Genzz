@@ -99,10 +99,6 @@ const BannerSlider = () => {
               src={`${base_url}/images/${img}`} // Adjust this path according to your server setup
               alt={`slide-${index}`}
               className={`transition-all duration-500 w-full object-cover rounded-[5px] md:rounded-xl ${index === current ? 'block' : 'hidden'}`}
-              onError={(e) => {
-                e.target.onerror = null; 
-                e.target.src = "https://via.placeholder.com/800x400?text=Banner+Image";
-              }}
             />
           ))}
           

@@ -196,10 +196,6 @@ const Categorylist = () => {
                             className="h-10 w-10 rounded-md object-cover"
                             src={`${base_url}/${category.imageUrl}`}
                             alt={category.name}
-                            onError={(e) => {
-                              e.target.onerror = null;
-                              e.target.src = 'https://via.placeholder.com/40';
-                            }}
                           />
                         </div>
                       </td>

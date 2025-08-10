@@ -36,7 +36,7 @@ import { FaSyncAlt } from "react-icons/fa";
 import { RiMenuFold2Line } from "react-icons/ri";
 import axios from 'axios';
 import toast, { Toaster } from 'react-hot-toast';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { IoClose } from "react-icons/io5";
 import { MdEmail } from "react-icons/md";
 const API_BASE_URL = import.meta.env.VITE_API_KEY_Base_URL;
@@ -56,6 +56,7 @@ import { useUser } from '../../context/UserContext';
 const Header = ({setShowPopup, setActiveLeftTab, showPopup, activeLeftTab }) => {
     const { userData, loading, error, fetchUserData } = useUser();
     const navigate = useNavigate();
+    const location = useLocation();
     const [language, setLanguage] = useState({
         code: 'bn',
         name: 'বাংলা',
@@ -74,7 +75,8 @@ const Header = ({setShowPopup, setActiveLeftTab, showPopup, activeLeftTab }) => 
     const [formData, setFormData] = useState({
         email: '',
         password: '',
-        confirmPassword: ''
+        confirmPassword: '',
+        referralCode: ''
     });
     const [errors, setErrors] = useState({
         password: '',
@@ -87,7 +89,27 @@ const Header = ({setShowPopup, setActiveLeftTab, showPopup, activeLeftTab }) => 
     const [otpEmail, setOtpEmail] = useState('');
     const [otpRequested, setOtpRequested] = useState(false);
     const [countdown, setCountdown] = useState(0);
+    const [referralCodeValid, setReferralCodeValid] = useState(false);
+    const [referralCodeChecking, setReferralCodeChecking] = useState(false);
+    const [referralCodeError, setReferralCodeError] = useState('');
+    const [referrerInfo, setReferrerInfo] = useState(null);
     const otpInputRefs = useRef([]);
+
+    // Check for referral code in URL on component mount
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const referralCode = params.get('referral_code');
+        
+        if (referralCode) {
+            setShowAuthModal(true);
+            setActiveTab('register');
+            setFormData(prev => ({
+                ...prev,
+                referralCode: referralCode
+            }));
+            checkReferralCode(referralCode);
+        }
+    }, [location]);
 
     const languages = [
         { code: 'bn', name: 'বাংলা', flag: 'https://images.5849492029.com//TCG_PROD_IMAGES/COUNTRY_FLAG/CIRCLE/BD.svg' },
@@ -144,7 +166,7 @@ const Header = ({setShowPopup, setActiveLeftTab, showPopup, activeLeftTab }) => 
         if (token && storedUser) {
             setIsAuthenticated(true);
             setUserData(JSON.parse(storedUser));
-            fetchUserData(); // Fetch updated user data
+            fetchUserData();
         }
     }, []);
 
@@ -165,8 +187,11 @@ const Header = ({setShowPopup, setActiveLeftTab, showPopup, activeLeftTab }) => 
     const openAuthModal = (tab) => {
         setShowAuthModal(true);
         setActiveTab(tab);
-        setFormData({ email: '', password: '', confirmPassword: '' });
+        setFormData({ email: '', password: '', confirmPassword: '', referralCode: '' });
         setErrors({ password: '', confirmPassword: '', email: '', formError: '' });
+        setReferralCodeValid(false);
+        setReferralCodeError('');
+        setReferrerInfo(null);
     };
 
     const closeModal = () => {
@@ -178,6 +203,9 @@ const Header = ({setShowPopup, setActiveLeftTab, showPopup, activeLeftTab }) => 
             email: '',
             formError: ''
         });
+        setReferralCodeValid(false);
+        setReferralCodeError('');
+        setReferrerInfo(null);
     };
 
     const toggleSidebar = () => {
@@ -190,6 +218,36 @@ const Header = ({setShowPopup, setActiveLeftTab, showPopup, activeLeftTab }) => 
 
     const toggleProfileDropdown = () => {
         setProfileDropdownOpen(!profileDropdownOpen);
+    };
+
+    const checkReferralCode = async (code) => {
+        if (!code) {
+            setReferralCodeValid(false);
+            setReferralCodeError('');
+            setReferrerInfo(null);
+            return;
+        }
+
+        setReferralCodeChecking(true);
+        try {
+            const response = await axios.get(`${API_BASE_URL}/auth/check-referral-code/${code}`);
+            console.log(response)
+            if (response.data.exists) {
+                setReferralCodeValid(true);
+                setReferralCodeError('');
+                setReferrerInfo(response.data.referrer);
+            } else {
+                setReferralCodeValid(false);
+                setReferralCodeError('অবৈধ রেফারেল কোড');
+                setReferrerInfo(null);
+            }
+        } catch (error) {
+            setReferralCodeValid(false);
+            setReferralCodeError('রেফারেল কোড চেক করতে সমস্যা হয়েছে');
+            setReferrerInfo(null);
+        } finally {
+            setReferralCodeChecking(false);
+        }
     };
 
     const handleInputChange = (e) => {
@@ -206,6 +264,10 @@ const Header = ({setShowPopup, setActiveLeftTab, showPopup, activeLeftTab }) => 
                 formError: ''
             });
         }
+
+        if (name === 'referralCode') {
+            checkReferralCode(value);
+        }
     };
 
     const handleOtpChange = (index, value) => {
@@ -213,7 +275,6 @@ const Header = ({setShowPopup, setActiveLeftTab, showPopup, activeLeftTab }) => 
         newOtp[index] = value;
         setOtp(newOtp);
 
-        // Auto focus to next input
         if (value && index < 5) {
             otpInputRefs.current[index + 1].focus();
         }
@@ -257,6 +318,12 @@ const Header = ({setShowPopup, setActiveLeftTab, showPopup, activeLeftTab }) => 
             }
         }
 
+        // Additional validation for referral code if provided
+        if (activeTab === 'register' && formData.referralCode && !referralCodeValid) {
+            newErrors.formError = 'অবৈধ রেফারেল কোড';
+            valid = false;
+        }
+
         setErrors(newErrors);
         return valid;
     };
@@ -280,7 +347,7 @@ const Header = ({setShowPopup, setActiveLeftTab, showPopup, activeLeftTab }) => 
             closeModal();
             toast.success('সফলভাবে লগইন করা হয়েছে!');
             navigate("/");
-            window.location.reload(); // Reload to update all data
+            window.location.reload();
         } catch (error) {
             setErrors({
                 ...errors,
@@ -291,11 +358,19 @@ const Header = ({setShowPopup, setActiveLeftTab, showPopup, activeLeftTab }) => 
 
     const handleRegister = async () => {
         if (!validateForm()) return;
+        if (formData.referralCode && !referralCodeValid) {
+            setErrors({
+                ...errors,
+                formError: 'অবৈধ রেফারেল কোড'
+            });
+            return;
+        }
 
         try {
             const response = await axios.post(`${API_BASE_URL}/auth/signup`, {
                 email: formData.email,
-                password: formData.password
+                password: formData.password,
+                referralCode: formData.referralCode
             });
 
             const { token, user } = response.data;
@@ -308,7 +383,7 @@ const Header = ({setShowPopup, setActiveLeftTab, showPopup, activeLeftTab }) => 
             closeModal();
             toast.success('সফলভাবে নিবন্ধন করা হয়েছে!');
             navigate("/");
-            window.location.reload(); // Reload to update all data
+            window.location.reload();
         } catch (error) {
             setErrors({
                 ...errors,
@@ -328,7 +403,7 @@ const Header = ({setShowPopup, setActiveLeftTab, showPopup, activeLeftTab }) => 
             setOtpEmail(formData.email);
             setShowOtpModal(true);
             setOtpRequested(true);
-            setCountdown(60); // 60 seconds countdown
+            setCountdown(60);
             toast.success('OTP ইমেইলে পাঠানো হয়েছে');
         } catch (error) {
             setErrors({
@@ -354,10 +429,8 @@ const Header = ({setShowPopup, setActiveLeftTab, showPopup, activeLeftTab }) => 
 
             const { resetToken } = response.data;
             
-            // Store reset token temporarily
             localStorage.setItem('resetToken', resetToken);
             
-            // Move to password reset form
             setActiveTab('reset-password');
             setShowOtpModal(false);
             setOtp(['', '', '', '', '', '']);
@@ -382,7 +455,6 @@ const Header = ({setShowPopup, setActiveLeftTab, showPopup, activeLeftTab }) => 
             closeModal();
             toast.success('পাসওয়ার্ড সফলভাবে রিসেট করা হয়েছে');
             
-            // Auto login after reset
             const loginResponse = await axios.post(`${API_BASE_URL}/auth/login`, {
                 email: response.data.user.email,
                 password: formData.password
@@ -394,7 +466,7 @@ const Header = ({setShowPopup, setActiveLeftTab, showPopup, activeLeftTab }) => 
             setIsAuthenticated(true);
             setUserData(user);
             navigate("/");
-            window.location.reload(); // Reload to update all data
+            window.location.reload();
         } catch (error) {
             setErrors({
                 ...errors,
@@ -549,7 +621,7 @@ const Header = ({setShowPopup, setActiveLeftTab, showPopup, activeLeftTab }) => 
                                         className="px-[15px] py-[8px] md:flex hidden cursor-pointer border-[1px] border-gray-700 rounded-[5px] flex justify-center items-center gap-2"
                                     >
                                         <img
-                                            src={userData?.avatar || "https://images.5943920202.com//TCG_PROD_IMAGES/B2C/01_PROFILE/PROFILE/0.png"}
+                                            src="https://images.5943920202.com//TCG_PROD_IMAGES/B2C/01_PROFILE/PROFILE/0.png"
                                             alt="Profile"
                                             className="w-5 h-5 md:w-6 md:h-6 rounded-full border-2 border-blue-500"
                                         />
@@ -562,7 +634,7 @@ const Header = ({setShowPopup, setActiveLeftTab, showPopup, activeLeftTab }) => 
                                             <div className="relative bg-gray-800 rounded-lg overflow-hidden transform-style-preserve-3d transition-all duration-300 group-hover:rotate-x-10">
                                                 <div className="px-4 py-3 bg-gray-900 border-b border-gray-700 flex items-center">
                                                     <img
-                                                        src={userData?.avatar || "https://images.5943920202.com//TCG_PROD_IMAGES/B2C/01_PROFILE/PROFILE/0.png"}
+                                                        src={"https://images.5943920202.com//TCG_PROD_IMAGES/B2C/01_PROFILE/PROFILE/0.png"}
                                                         alt="Profile"
                                                         className="w-10 h-10 rounded-full border-2 border-blue-500 mr-3"
                                                     />
@@ -806,7 +878,7 @@ const Header = ({setShowPopup, setActiveLeftTab, showPopup, activeLeftTab }) => 
                                         <div className="flex items-center">
                                             <input type="checkbox" id="remember" className="mr-2 accent-blue-500" />
                                             <label htmlFor="remember">মনে রাখুন</label>
-                                        </div>
+                                                                           </div>
                                         <button 
                                             onClick={() => setActiveTab('forgot-password')}
                                             className="text-theme_color2 hover:underline cursor-pointer"
@@ -821,13 +893,22 @@ const Header = ({setShowPopup, setActiveLeftTab, showPopup, activeLeftTab }) => 
                                     >
                                         লগইন করুন
                                     </button>
-                                </div>
-                            )}
 
-                            {activeTab === 'register' && (
+                                    {/* <div className="flex items-center justify-center space-x-4 mt-4">
+                                        <button className="flex items-center justify-center bg-[#3b5998] hover:bg-[#3b5998]/90 text-white px-4 py-2 rounded-md">
+                                            <FaFacebookF className="mr-2" />
+                                            Facebook
+                                        </button>
+                                        <button className="flex items-center justify-center bg-[#DB4437] hover:bg-[#DB4437]/90 text-white px-4 py-2 rounded-md">
+                                            <FaGoogle className="mr-2" />
+                                            Google
+                                        </button>
+                                    </div> */}
+                                </div>
+                            )}                            {activeTab === 'register' && (
                                 <div className="space-y-4">
                                     <div className="relative">
-                                        <MdEmail  className="absolute left-3 top-3 text-theme_color2 text-sm md:text-base" />
+                                        <MdEmail className="absolute left-3 top-3 text-theme_color2 text-sm md:text-base" />
                                         <input
                                             type="email"
                                             name="email"
@@ -883,9 +964,37 @@ const Header = ({setShowPopup, setActiveLeftTab, showPopup, activeLeftTab }) => 
                                         )}
                                     </div>
 
+                                    <div className="relative">
+                                        <FaUserFriends className="absolute left-3 top-3 text-theme_color2 text-sm md:text-base" />
+                                        <input
+                                            type="text"
+                                            name="referralCode"
+                                            value={formData.referralCode}
+                                            onChange={handleInputChange}
+                                            placeholder="রেফারেল কোড (ঐচ্ছিক)"
+                                            className="w-full bg-gray-700 text-white border border-gray-600 py-2 pl-10 pr-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base placeholder-gray-400"
+                                        />
+                                        {referralCodeChecking && (
+                                            <div className="absolute right-3 top-3">
+                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-theme_color2"></div>
+                                            </div>
+                                        )}
+                                        {referralCodeError && !referralCodeChecking && (
+                                            <p className="text-red-400 text-xs mt-1">{referralCodeError}</p>
+                                        )}
+                                        {referrerInfo && !referralCodeChecking && (
+                                            <p className="text-green-400 text-xs mt-1">
+                                                রেফারার: {referrerInfo.username}
+                                            </p>
+                                        )}
+                                    </div>
+
                                     <button 
                                         onClick={handleRegister}
-                                        className="w-full bg-theme_color2 hover:bg-theme_color2/90 cursor-pointer px-[20px] py-[10px] rounded-[5px] "
+                                        disabled={formData.referralCode && !referralCodeValid}
+                                        className={`w-full bg-theme_color2 hover:bg-theme_color2/90 cursor-pointer px-[20px] py-[10px] rounded-[5px] ${
+                                            formData.referralCode && !referralCodeValid ? 'opacity-50 cursor-not-allowed' : ''
+                                        }`}
                                     >
                                         নিবন্ধন করুন
                                     </button>
