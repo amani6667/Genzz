@@ -3,6 +3,7 @@ import { BrowserRouter,Routes,Route } from 'react-router-dom'
 import Register from './pages/dashboard/Register'
 import Login from './pages/dashboard/Login'
 import Dashboard from './pages/dashboard/Dashbaord'
+import Profile from './pages/settings/Profile'
 const App = () => {
   return (
    <BrowserRouter>
@@ -11,6 +12,7 @@ const App = () => {
         <Route exact path="/login"element={<Login/>}/>
         {/* --------------------------------after-login-all-pages------------------------- */}
         <Route exact path="/dashboard"element={<Dashboard/>}/>
+        <Route exact path="/setting"element={<Profile/>}/>
 
       </Routes>
    </BrowserRouter>

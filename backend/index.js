@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
@@ -7,6 +8,8 @@ const user_route = require('./Routes/Userroute');
 const admin_route = require('./Routes/Adminroute');
 const useragent = require('express-useragent');
 const Router = require('./Routes/Router');
+const Affiliaterouter = require("./Routes/Affiliaterouter");
+const Affiliateauth = require("./Routes/Affliateauth");
 require('dotenv').config();
 require('./Models/db');
 const PORT = process.env.PORT || 8000;
@@ -41,6 +44,8 @@ app.use('/auth', AuthRouter);
 app.use("/user",user_route);
 app.use("/admin",admin_route);
 app.use("/api",Router);
+app.use("/api/affiliate",Affiliateauth);
+app.use("/api/affiliate-user",Affiliaterouter);
 app.get("/",(req,res)=>{
     res.send("hello HoBet backend part!")
 })
