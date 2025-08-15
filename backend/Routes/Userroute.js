@@ -8,8 +8,78 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const User = require("../Models/User");
+const axios= require("axios");
+// ----------------- Update Username -----------------
+user_route.put("/update-username", ensureAuthenticated, async (req, res) => {
+    try {
+        const { userId, newUsername, password } = req.body;
 
+        // ইনপুট ভ্যালিডেশন
+        if (!newUsername || !password) {
+            return res.status(400).json({
+                success: false,
+                message: "নতুন ইউজারনেম এবং পাসওয়ার্ড অবশ্যই প্রয়োজন"
+            });
+        }
 
+        // ইউজারনেম ফরম্যাট ভ্যালিডেশন
+        if (!/^[a-zA-Z0-9_]{4,20}$/.test(newUsername)) {
+            return res.status(400).json({
+                success: false,
+                message: "ইউজারনেম অবশ্যই ৪-২০ ক্যারেক্টারের হতে হবে এবং শুধুমাত্র ইংরেজি অক্ষর, সংখ্যা এবং আন্ডারস্কোর ব্যবহার করা যাবে"
+            });
+        }
+
+        // পাসওয়ার্ড সহ ইউজার খুঁজুন
+        const user = await UserModel.findById(userId).select('+password');
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "ইউজার খুঁজে পাওয়া যায়নি"
+            });
+        }
+
+        // পাসওয়ার্ড ভেরিফাই করুন
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
+            return res.status(401).json({
+                success: false,
+                message: "পাসওয়ার্ড ভুল হয়েছে"
+            });
+        }
+
+        // নতুন ইউজারনেম ইতিমধ্যে আছে কিনা চেক করুন
+        const existingUser = await UserModel.findOne({ username: newUsername });
+        if (existingUser && existingUser._id.toString() !== userId) {
+            return res.status(400).json({
+                success: false,
+                message: "এই ইউজারনেম ইতিমধ্যে নেওয়া হয়েছে"
+            });
+        }
+
+        // ইউজারনেম আপডেট করুন
+        const oldUsername = user.username;
+        user.username = newUsername;
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            message: "ইউজারনেম সফলভাবে আপডেট হয়েছে",
+            data: {
+                oldUsername,
+                newUsername
+            }
+        });
+
+    } catch (error) {
+        console.error("ইউজারনেম আপডেট করতে সমস্যা:", error);
+        res.status(500).json({
+            success: false,
+            message: "ইউজারনেম আপডেট করতে ব্যর্থ হয়েছে",
+            error: error.message
+        });
+    }
+});
 // --------------------------------user-information-----------------------
 user_route.get("/user-information/:id",ensureAuthenticated,async(req,res)=>{
   try {
@@ -22,8 +92,6 @@ user_route.get("/user-information/:id",ensureAuthenticated,async(req,res)=>{
     console.log(error)
   }
 })
-
-
 // -------------------------after-play-------------------------------
 user_route.put("/after-play-minus-balance",ensureAuthenticated,async(req,res)=>{
     try {
@@ -39,6 +107,246 @@ user_route.put("/after-play-minus-balance",ensureAuthenticated,async(req,res)=>{
         find_user.save();
     } catch (err) {
         console.log(err)
+    }
+});
+// ---------------------deposit-system--------------------------------
+
+// Payment gateway configuration
+const PAYMENT_CONFIG = {
+  BASE_URL: process.env.PAYMENT_GATEWAY_URL || 'http://localhost:8080',
+  API_KEY: process.env.PAYMENT_GATEWAY_API_KEY || '	b681e4a242dfdcf173db',
+  FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173'
+};
+
+// Initiate deposit
+user_route.post('/initiate',async (req, res) => {
+    const { method, amount, bonusType,userid } = req.body;
+     console.log(req.body)
+    try {
+        // Validate inputs
+        if (!method || !amount) {
+            return res.status(400).json({ message: 'Method and amount are required' });
+        }
+
+        const amountNum = parseFloat(amount);
+        if (isNaN(amountNum)) {
+            return res.status(400).json({ message: 'Invalid amount' });
+        }
+
+        if (amountNum < 100 || amountNum > 30000) {
+            return res.status(400).json({ 
+                message: 'Amount must be between 100 and 30,000 BDT' 
+            });
+        }
+       
+        const user = await User.findById(req.body.userid);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Check if user has mobile number
+        if (!user.phone) {
+            return res.status(400).json({ 
+                message: 'Please add a mobile number to your account before depositing' 
+            });
+        }
+
+        // Validate bonus selection
+        if (bonusType && bonusType !== 'none') {
+            if (bonusType === 'first_deposit' && user.bonusInfo.firstDepositBonusClaimed) {
+                return res.status(400).json({ 
+                    message: 'First deposit bonus already claimed' 
+                });
+            }
+
+            if (bonusType === 'special_bonus' && 
+                (!user.isNewUser || user.total_deposit > 0)) {
+                return res.status(400).json({ 
+                    message: 'Special bonus only available for new users with no prior deposits' 
+                });
+            }
+        }
+
+        // Create deposit record in pending state
+        const orderId = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        const deposit = {
+            method,
+            amount: amountNum,
+            status: 'pending',
+            bonusType: bonusType || 'none',
+            orderId,
+            createdAt: new Date()
+        };
+
+        user.depositHistory.push(deposit);
+        await user.save();
+
+        // Prepare payment gateway payload
+        const paymentPayload = {
+            provider: method.toLowerCase(),
+            amount: amountNum,
+            orderId,
+            currency: "BDT",
+            payerId: user.player_id,
+            redirectUrl: `${PAYMENT_CONFIG.FRONTEND_URL}/user/deposit-success`,
+            callbackUrl: `http://localhost:8000/user/callback`
+        };
+
+        // Call payment gateway API
+        const paymentResponse = await axios.post(
+            `${PAYMENT_CONFIG.BASE_URL}/api/payment/payment`,
+            paymentPayload,
+            {
+                headers: {
+                    'x-api-key': PAYMENT_CONFIG.API_KEY,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+
+        if (!paymentResponse.data || !paymentResponse.data.success) {
+            throw new Error(paymentResponse.data?.message || 'Failed to initiate payment');
+        }
+
+        res.json({
+            success: true,
+            message: 'Payment initiated',
+            paymentId: paymentResponse.data.paymentId,
+            redirectUrl: `http://localhost:5175/checkout/${paymentResponse.data.paymentId}`
+        });
+
+    } catch (error) {
+        console.error('Deposit initiation error:', error);
+        res.status(500).json({ 
+            message: error.response?.data?.message || error.message || 'Server error' 
+        });
+    }
+});
+
+// Payment callback handler
+user_route.post('/callback', async (req, res) => {
+    const { paymentId, transactionId, status, amount, player_id } = req.body;
+    console.log("Received callback:", req.body);
+    
+    try {
+        if (!paymentId || !status || !player_id) {
+            return res.status(400).json({ message: 'Invalid callback data' });
+        }
+
+        // Find user with pending deposit matching this paymentId (previously orderId)
+        const user = await User.findOne({
+            'depositHistory.orderId': paymentId,
+            'depositHistory.status': 'pending',
+            'playerId': player_id // Assuming you store playerId in your User model
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: 'Deposit not found or already processed' });
+        }
+
+        // Find the specific deposit record
+        const depositIndex = user.depositHistory.findIndex(d => d.orderId === paymentId);
+        if (depositIndex === -1) {
+            return res.status(404).json({ message: 'Deposit record not found' });
+        }
+
+        const deposit = user.depositHistory[depositIndex];
+
+        if (status === 'success') {
+            // Verify amount matches
+            if (amount && parseFloat(amount) !== deposit.amount) {
+                console.warn(`Amount mismatch for payment ${paymentId}. Expected: ${deposit.amount}, Received: ${amount}`);
+                // You may want to flag this for manual review
+            }
+
+            // Calculate bonus if applicable
+            let bonusAmount = 0;
+            if (deposit.bonusType === 'first_deposit') {
+                bonusAmount = deposit.amount * 0.03; // 3% bonus
+            } else if (deposit.bonusType === 'special_bonus') {
+                bonusAmount = deposit.amount * 1.5; // 150% bonus
+            }
+
+            // Update deposit status
+            user.depositHistory[depositIndex].status = 'completed';
+            user.depositHistory[depositIndex].transactionId = transactionId;
+            user.depositHistory[depositIndex].completedAt = new Date();
+            user.depositHistory[depositIndex].bonusAmount = bonusAmount;
+
+            // Update user balance
+            user.balance += deposit.amount;
+            user.total_deposit += deposit.amount;
+
+            // Apply bonus if any
+            if (bonusAmount > 0) {
+                user.bonusBalance += bonusAmount;
+                
+                if (deposit.bonusType === 'special_bonus') {
+                    user.bonusInfo.activeBonuses.push({
+                        bonusType: 'special_bonus',
+                        amount: bonusAmount,
+                        originalAmount: bonusAmount,
+                        wageringRequirement: 30 // 30x
+                    });
+                }
+                
+                if (deposit.bonusType === 'first_deposit') {
+                    user.bonusInfo.firstDepositBonusClaimed = true;
+                }
+            }
+
+            // Add transaction record
+            user.transactionHistory.push({
+                type: 'deposit',
+                amount: deposit.amount,
+                balanceBefore: user.balance - deposit.amount,
+                balanceAfter: user.balance,
+                description: `Deposit via ${deposit.method}`,
+                referenceId: transactionId,
+                createdAt: new Date()
+            });
+
+            await user.save();
+            
+            return res.json({ 
+                success: true,
+                message: 'Deposit completed successfully'
+            });
+        } else {
+            // Mark as failed
+            user.depositHistory[depositIndex].status = 'failed';
+            user.depositHistory[depositIndex].processedAt = new Date();
+            await user.save();
+            
+            return res.json({ 
+                success: false,
+                message: 'Deposit failed'
+            });
+        }
+    } catch (error) {
+        console.error('Deposit callback error:', error);
+        res.status(500).json({ message: 'Server error processing callback' });
+    }
+});
+
+// Get deposit history
+user_route.get('/history', ensureAuthenticated, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Sort by most recent first
+        const history = user.depositHistory.sort((a, b) => b.createdAt - a.createdAt);
+        
+        res.json({
+            success: true,
+            history: history
+        });
+    } catch (error) {
+        console.error('Error getting deposit history:', error);
+        res.status(500).json({ message: 'Server error' });
     }
 });
 // ------------------after-win--------------------------
@@ -76,7 +384,6 @@ user_route.put("/after-withdraw-minus-balance",ensureAuthenticated,async(req,res
     }
 });
 // -------------create-transations--------------------
-
 user_route.post("/create-transaction", async (req, res) => {
   try {
       const {
@@ -201,8 +508,7 @@ user_route.post("/payout",async (req, res) => {
       console.error(error);
       res.status(500).json({ success: false, message: "Server error." });
     }
-  });
-  
+});
   // Get user's withdrawals
 user_route.get("/withdrawal/:userId",async (req, res) => {
     try {
@@ -213,7 +519,6 @@ user_route.get("/withdrawal/:userId",async (req, res) => {
       res.status(500).json({ success: false, message: "Server error." });
     }
 });
-  
   // Admin approves/rejects a withdrawal
 user_route.put("/update/:id", async (req, res) => {
     try {
@@ -360,7 +665,7 @@ user_route.post("/add-mobile", ensureAuthenticated, async (req, res) => {
         if (!/^[0-9]{10,15}$/.test(mobileNumber)) {
             return res.status(400).json({ 
                 success: false, 
-                message: "Invalid mobile number format" 
+                message: "মোবাইল নম্বরের ফরম্যাট সঠিক নয়" 
             });
         }
 
@@ -369,7 +674,7 @@ user_route.post("/add-mobile", ensureAuthenticated, async (req, res) => {
         if (existingUser) {
             return res.status(400).json({ 
                 success: false, 
-                message: "Mobile number already registered" 
+                message: "এই মোবাইল নম্বরটি ইতিমধ্যে রেজিস্টার্ড" 
             });
         }
 
@@ -378,7 +683,7 @@ user_route.post("/add-mobile", ensureAuthenticated, async (req, res) => {
         if (!user) {
             return res.status(404).json({ 
                 success: false, 
-                message: "User not found" 
+                message: "ব্যবহারকারী খুঁজে পাওয়া যায়নি" 
             });
         }
 
@@ -389,20 +694,20 @@ user_route.post("/add-mobile", ensureAuthenticated, async (req, res) => {
         // Update user
         user.phone = mobileNumber;
         user.transactionPassword = hashedTransactionPassword;
-        user.isPhoneVerified = false; // You might want to verify via OTP later
+        user.isPhoneVerified = false;
 
         await user.save();
 
         res.status(200).json({ 
             success: true, 
-            message: "Mobile number and transaction password added successfully" 
+            message: "মোবাইল নম্বর এবং ট্রানজেকশন পাসওয়ার্ড সফলভাবে সংযুক্ত হয়েছে" 
         });
 
     } catch (error) {
         console.error(error);
         res.status(500).json({ 
             success: false, 
-            message: "Server error" 
+            message: "সার্ভার সমস্যা" 
         });
     }
 });
@@ -417,7 +722,7 @@ user_route.put("/update-transaction-password", ensureAuthenticated, async (req, 
         if (!user) {
             return res.status(404).json({ 
                 success: false, 
-                message: "User not found" 
+                message: "ব্যবহারকারী খুঁজে পাওয়া যায়নি" 
             });
         }
 
@@ -426,7 +731,7 @@ user_route.put("/update-transaction-password", ensureAuthenticated, async (req, 
         if (!isMatch) {
             return res.status(400).json({ 
                 success: false, 
-                message: "Current transaction password is incorrect" 
+                message: "বর্তমান ট্রানজেকশন পাসওয়ার্ড ভুল" 
             });
         }
 
@@ -440,14 +745,14 @@ user_route.put("/update-transaction-password", ensureAuthenticated, async (req, 
 
         res.status(200).json({ 
             success: true, 
-            message: "Transaction password updated successfully" 
+            message: "ট্রানজেকশন পাসওয়ার্ড সফলভাবে আপডেট করা হয়েছে" 
         });
 
     } catch (error) {
         console.error(error);
         res.status(500).json({ 
             success: false, 
-            message: "Server error" 
+            message: "সার্ভার সমস্যা" 
         });
     }
 });
@@ -553,6 +858,7 @@ user_route.get("/referral-history/:userId", ensureAuthenticated, async (req, res
 });
 
 // 7. Update Account Password
+// 7. Update Account Password
 user_route.put("/update-account-password", ensureAuthenticated, async (req, res) => {
     try {
         const { userId, currentPassword, newPassword } = req.body;
@@ -562,7 +868,7 @@ user_route.put("/update-account-password", ensureAuthenticated, async (req, res)
         if (!user) {
             return res.status(404).json({ 
                 success: false, 
-                message: "User not found" 
+                message: "ব্যবহারকারী খুঁজে পাওয়া যায়নি" 
             });
         }
 
@@ -571,7 +877,7 @@ user_route.put("/update-account-password", ensureAuthenticated, async (req, res)
         if (!isMatch) {
             return res.status(400).json({ 
                 success: false, 
-                message: "Current password is incorrect" 
+                message: "বর্তমান পাসওয়ার্ডটি ভুল" 
             });
         }
 
@@ -585,7 +891,232 @@ user_route.put("/update-account-password", ensureAuthenticated, async (req, res)
 
         res.status(200).json({ 
             success: true, 
-            message: "Account password updated successfully" 
+            message: "অ্যাকাউন্ট পাসওয়ার্ড সফলভাবে আপডেট করা হয়েছে" 
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ 
+            success: false, 
+            message: "সার্ভার সমস্যা" 
+        });
+    }
+});
+
+
+// ============================all-refer-details==============================
+// 8. Get Referral Bonus Details
+user_route.get("/referral-bonus-details/:userId", ensureAuthenticated, async (req, res) => {
+    try {
+        const user = await UserModel.findById(req.params.userId);
+        
+        if (!user) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "User not found" 
+            });
+        }
+
+        // Get all transactions where type is referral bonus
+        const referralBonuses = await transaction_model.find({
+            customer_id: req.params.userId,
+            type: 'referral_bonus'
+        }).sort({ createdAt: -1 });
+
+        res.status(200).json({ 
+            success: true, 
+            data: {
+                totalReferralEarnings: user.referralEarnings || 0,
+                referralCount: user.referralCount || 0,
+                referralCode: user.referralCode || '',
+                bonusHistory: referralBonuses,
+                bonusRate: process.env.REFERRAL_BONUS_RATE || '10%' // Default 10% if not set
+            }
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Server error" 
+        });
+    }
+});
+
+// 9. Get Detailed Referred Users Information
+user_route.get("/referred-users-details/:userId", async (req, res) => {
+    try {
+        const user = await UserModel.findById(req.params.userId)
+            .populate({
+                path: 'referralUsers.user',
+                select: 'username email phone balance deposit_money createdAt lastLogin'
+            });
+
+        if (!user) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "User not found" 
+            });
+        }
+
+        // Calculate statistics
+        const activeReferrals = user.referralUsers.filter(u => u.user.lastLogin > Date.now() - 30*24*60*60*1000).length;
+        const depositedReferrals = user.referralUsers.filter(u => u.user.deposit_money > 0).length;
+
+        res.status(200).json({ 
+            success: true, 
+            data: {
+                referralCode: user.referralCode,
+                totalReferrals: user.referralCount || 0,
+                activeReferrals,
+                depositedReferrals,
+                referralEarnings: user.referralEarnings || 0,
+                referredUsers: user.referralUsers.map(ref => ({
+                    id: ref.user._id,
+                    username: ref.user.username,
+                    email: ref.user.email,
+                    phone: ref.user.phone || 'Not provided',
+                    balance: ref.user.balance,
+                    joinDate: ref.user.createdAt,
+                    lastActive: ref.user.lastLogin,
+                    hasDeposited: ref.user.deposit_money > 0,
+                    earnedAmount: ref.earnedAmount
+                })),
+                totalDepositsByReferrals: user.referralUsers.reduce((sum, ref) => sum + (ref.user.deposit_money || 0), 0)
+            }
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Server error" 
+        });
+    }
+});
+
+// Helper function to format mobile number (similar to your frontend)
+function formatMobileNumber(number) {
+    if (!number || number.length < 7) return number;
+    const firstPart = number.substring(0, 4);
+    const lastPart = number.substring(number.length - 3);
+    return `${firstPart}****${lastPart}`;
+}
+
+// 10. Generate New Referral Code
+user_route.post("/generate-referral-code/:userId", ensureAuthenticated, async (req, res) => {
+    try {
+        const user = await UserModel.findById(req.params.userId);
+        if (!user) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "User not found" 
+            });
+        }
+
+        // Generate a random 8-character alphanumeric code
+        const newCode = Math.random().toString(36).substring(2, 10).toUpperCase();
+        user.referralCode = newCode;
+        await user.save();
+
+        res.status(200).json({ 
+            success: true, 
+            message: "New referral code generated",
+            referralCode: newCode
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Server error" 
+        });
+    }
+});
+// 11. Claim Referral Bonus
+user_route.post("/claim-referral-bonus/:userId", ensureAuthenticated, async (req, res) => {
+    try {
+        const user = await UserModel.findById(req.params.userId);
+        if (!user) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "User not found" 
+            });
+        }
+
+        if (user.referralEarnings <= 0) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "No referral earnings to claim" 
+            });
+        }
+
+        // Add to balance
+        const bonusAmount = user.referralEarnings;
+        user.balance += bonusAmount;
+        
+        // Create transaction record
+        const newTransaction = new transaction_model({
+            customer_id: user._id,
+            customer_name: user.username,
+            customer_email: user.email,
+            payment_type: 'referral_bonus',
+            amount: bonusAmount,
+            post_balance: user.balance,
+            transaction: `REFBONUS-${Date.now()}`,
+            type: 'referral_bonus',
+            status: 'success'
+        });
+
+        // Reset referral earnings
+        user.referralEarnings = 0;
+        
+        await Promise.all([user.save(), newTransaction.save()]);
+
+        res.status(200).json({ 
+            success: true, 
+            message: `$${bonusAmount} referral bonus claimed successfully`,
+            newBalance: user.balance
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Server error" 
+        });
+    }
+});
+// 12. Get Referral Statistics
+user_route.get("/referral-stats/:userId", ensureAuthenticated, async (req, res) => {
+    try {
+        const user = await UserModel.findById(req.params.userId);
+        if (!user) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "User not found" 
+            });
+        }
+
+        // Calculate statistics
+        const referredUsers = await UserModel.find({ referredBy: user._id });
+        
+        const activeReferrals = referredUsers.filter(u => u.lastLogin > Date.now() - 30*24*60*60*1000).length;
+        const depositedReferrals = referredUsers.filter(u => u.deposit_money > 0).length;
+        const totalDeposits = referredUsers.reduce((sum, u) => sum + (u.deposit_money || 0), 0);
+        
+        res.status(200).json({ 
+            success: true, 
+            data: {
+                referralCode: user.referralCode,
+                totalReferrals: user.referralCount || 0,
+                activeReferrals,
+                depositedReferrals,
+                totalDepositsByReferrals: totalDeposits,
+                referralEarnings: user.referralEarnings || 0,
+                potentialEarnings: totalDeposits * (process.env.REFERRAL_BONUS_RATE || 0.1), // Assuming 10% bonus rate
+                bonusRate: process.env.REFERRAL_BONUS_RATE || '10%'
+            }
         });
 
     } catch (error) {

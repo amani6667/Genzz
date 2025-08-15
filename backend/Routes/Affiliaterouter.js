@@ -1,7 +1,8 @@
 const express = require("express");
 const Affiliaterouter = express.Router();
 const jwt = require("jsonwebtoken");
-const AffiliateUser = require("../models/AffiliateUser");
+const Affiliateuser = require("../Models/Affiliateuser");
+
 
 // Middleware to verify JWT token
 const authenticateAffiliate = async (req, res, next) => {
@@ -137,7 +138,7 @@ Affiliaterouter.put("/profile", authenticateAffiliate, async (req, res) => {
     }
 
     // Update the affiliate
-    const updatedAffiliate = await AffiliateUser.findByIdAndUpdate(
+    const updatedAffiliate = await Affiliateuser.findByIdAndUpdate(
       req.affiliate._id,
       { 
         fullName, 

@@ -4,7 +4,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const crypto = require("crypto");
-const AffiliateUser = require("../models/AffiliateUser");
+const Affiliateuser = require("../Models/Affiliateuser");
 
 const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key_here";
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "30d";
@@ -81,7 +81,7 @@ Affiliateauth.post("/register", async (req, res) => {
     }
 
     // Check if user exists
-    const existingUser = await AffiliateUser.findOne({ email });
+    const existingUser = await Affiliateuser.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ success: false, message: "Email already registered" });
     }

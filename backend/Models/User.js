@@ -6,6 +6,12 @@ const Schema = mongoose.Schema;
 const SALT_WORK_FACTOR = 10;
 const PASSWORD_MIN_LENGTH = 6;
 const OTP_EXPIRY_MINUTES = 5; // OTP expires after 5 minutes
+const BONUS_CONFIG = {
+  BONUS_EXPIRY_DAYS: 30,
+  FIRST_DEPOSIT_BONUS_RATE: 0.03, // 3%
+  SPECIAL_BONUS_RATE: 1.5, // 150%
+  WAGERING_REQUIREMENT: 30 // 30x
+};
 
 const UserSchema = new Schema({
     // ========== BASIC INFORMATION ==========
@@ -79,6 +85,10 @@ const UserSchema = new Schema({
         type: Number,
         default: 0
     },
+    createdAt: {
+        type: Date,
+        default: Date.now
+    },
 
     // ========== FINANCIAL INFORMATION ==========
     currency: {
@@ -90,7 +100,7 @@ const UserSchema = new Schema({
         default: 0,
         min: 0
     },
-    bonus: {
+    bonusBalance: {
         type: Number,
         default: 0,
         min: 0
@@ -123,6 +133,80 @@ const UserSchema = new Schema({
     net_profit: {
         type: Number,
         default: 0
+    },
+    totalWagered: {
+        type: Number,
+        default: 0
+    },
+    dailyWithdrawalLimit: {
+        type: Number,
+        default: 50000 // 50,000 BDT default daily limit
+    },
+    withdrawalCountToday: {
+        type: Number,
+        default: 0
+    },
+    lastWithdrawalDate: {
+        type: Date
+    },
+
+    // ========== BONUS INFORMATION ==========
+    bonusInfo: {
+        firstDepositBonusClaimed: {
+            type: Boolean,
+            default: false
+        },
+        activeBonuses: [{
+            bonusType: {
+                type: String,
+                enum: ['first_deposit', 'special_bonus'],
+                required: true
+            },
+            amount: {
+                type: Number,
+                required: true
+            },
+            originalAmount: {
+                type: Number,
+                required: true
+            },
+            wageringRequirement: {
+                type: Number,
+                required: true,
+                default: BONUS_CONFIG.WAGERING_REQUIREMENT
+            },
+            amountWagered: {
+                type: Number,
+                default: 0
+            },
+            createdAt: {
+                type: Date,
+                default: Date.now
+            },
+            expiresAt: {
+                type: Date,
+                default: function() {
+                    const date = new Date();
+                    date.setDate(date.getDate() + BONUS_CONFIG.BONUS_EXPIRY_DAYS);
+                    return date;
+                }
+            },
+            status: {
+                type: String,
+                enum: ['active', 'completed', 'expired', 'cancelled'],
+                default: 'active'
+            }
+        }],
+        bonusWageringTotal: {
+            type: Number,
+            default: 0
+        },
+        cancelledBonuses: [{
+            bonusType: String,
+            amount: Number,
+            penaltyApplied: Number,
+            cancelledAt: Date
+        }]
     },
 
     // ========== SECURITY ==========
@@ -210,56 +294,55 @@ const UserSchema = new Schema({
     }],
 
     // ========== REFERRAL SYSTEM ==========
-  // ========== REFERRAL SYSTEM ==========
-referralCode: {
-    type: String,
-    unique: true,
-    sparse: true
-},
-referredBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    default: null
-},
-referralEarnings: {
-    type: Number,
-    default: 0
-},
-referralCount: {
-    type: Number,
-    default: 0
-},
-referralUsers: [{
-    user: { 
+    referralCode: {
+        type: String,
+        unique: true,
+        sparse: true
+    },
+    referredBy: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "User"
+        ref: "User",
+        default: null
     },
-    joinedAt: {
-        type: Date,
-        default: Date.now
-    },
-    earnedAmount: {
+    referralEarnings: {
         type: Number,
         default: 0
-    }
-}],
-referralTracking: [{
-    referralCodeUsed: String,
-    referredUser: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User"
     },
-    timestamp: {
-        type: Date,
-        default: Date.now
-    }
-}],
+    referralCount: {
+        type: Number,
+        default: 0
+    },
+    referralUsers: [{
+        user: { 
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User"
+        },
+        joinedAt: {
+            type: Date,
+            default: Date.now
+        },
+        earnedAmount: {
+            type: Number,
+            default: 0
+        }
+    }],
+    referralTracking: [{
+        referralCodeUsed: String,
+        referredUser: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User"
+        },
+        timestamp: {
+            type: Date,
+            default: Date.now
+        }
+    }],
 
-    // ========== HISTORIES ==========
+    // ========== TRANSACTION HISTORIES ==========
     betHistory: [{
         game: String,
         amount: Number,
-        result: { type: String, enum: ['win', 'loss', 'pending'], default: 'pending' },
+        result: { type: String, enum: ['win', 'loss', 'pending', 'draw'], default: 'pending' },
         payout: Number,
         createdAt: { type: Date, default: Date.now }
     }],
@@ -270,18 +353,116 @@ referralTracking: [{
         date: { type: Date, default: Date.now }
     }],
     depositHistory: [{
-        method: String,
-        amount: Number,
-        status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+        method: {
+            type: String,
+            enum: ['bkash', 'nagad', 'rocket', 'bank'],
+            required: true
+        },
+        amount: {
+            type: Number,
+            required: true,
+            min: 100
+        },
+        status: { 
+            type: String, 
+            enum: ['pending', 'completed', 'failed', 'cancelled'], 
+            default: 'pending' 
+        },
         transactionId: String,
-        date: { type: Date, default: Date.now }
+        bonusApplied: {
+            type: Boolean,
+            default: false
+        },
+        bonusType: {
+            type: String,
+            default: 'none'
+        },
+        bonusAmount: {
+            type: Number,
+            default: 0
+        },
+        orderId: String,
+        paymentUrl: String,
+        processedAt: Date,
+        completedAt: Date,
+        createdAt: { 
+            type: Date, 
+            default: Date.now 
+        }
     }],
     withdrawHistory: [{
-        method: String,
-        amount: Number,
-        status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+        method: {
+            type: String,
+            enum: ['bkash', 'nagad', 'rocket', 'bank'],
+            required: true
+        },
+        amount: {
+            type: Number,
+            required: true,
+            min: 300
+        },
+        netAmount: {
+            type: Number,
+            required: true
+        },
+        status: { 
+            type: String, 
+            enum: ['pending', 'processing', 'completed', 'rejected', 'cancelled'], 
+            default: 'pending' 
+        },
+        accountNumber: {
+            type: String,
+            required: true
+        },
         transactionId: String,
-        date: { type: Date, default: Date.now }
+        orderId: String,
+        bonusCancelled: {
+            type: Boolean,
+            default: false
+        },
+        bonusPenalty: {
+            type: Number,
+            default: 0
+        },
+        commissionApplied: {
+            type: Boolean,
+            default: false
+        },
+        commissionAmount: {
+            type: Number,
+            default: 0
+        },
+        processedAt: Date,
+        completedAt: Date,
+        createdAt: { 
+            type: Date, 
+            default: Date.now 
+        }
+    }],
+    transactionHistory: [{
+        type: {
+            type: String,
+            enum: ['deposit', 'withdrawal', 'bonus', 'bet', 'win', 'penalty'],
+            required: true
+        },
+        amount: {
+            type: Number,
+            required: true
+        },
+        balanceBefore: {
+            type: Number,
+            required: true
+        },
+        balanceAfter: {
+            type: Number,
+            required: true
+        },
+        description: String,
+        referenceId: String,
+        createdAt: {
+            type: Date,
+            default: Date.now
+        }
     }]
 
 }, {
@@ -308,14 +489,47 @@ UserSchema.virtual('formattedBalance').get(function() {
     return this.balance.toFixed(2);
 });
 
+UserSchema.virtual('accountAgeInDays').get(function() {
+    return Math.floor((new Date() - new Date(this.createdAt)) / (1000 * 60 * 60 * 24));
+});
+
+UserSchema.virtual('isNewUser').get(function() {
+    return this.accountAgeInDays < 3;
+});
+
+UserSchema.virtual('availableBalance').get(function() {
+    let available = this.balance || 0;
+    
+    // If user has bonus and hasn't cancelled it
+    if (this.bonusBalance > 0) {
+        return 0; // Can't withdraw from main balance until bonus is cleared
+    }
+    
+    // Check wagering requirements
+    if (this.total_deposit > 0) {
+        const wageringRequirement = this.total_deposit * 3;
+        const wageringCompleted = this.totalWagered || 0;
+        
+        if (wageringCompleted < wageringRequirement) {
+            // If they want to withdraw without completing, apply 20% commission
+            return available * 0.8; // 20% commission
+        }
+    }
+    
+    return available;
+});
+
 UserSchema.virtual('fullProfile').get(function() {
     return {
         username: this.username,
         email: this.email,
         phone: this.phone,
         balance: this.balance,
+        bonusBalance: this.bonusBalance,
         status: this.status,
-        role: this.role
+        role: this.role,
+        totalDeposit: this.total_deposit,
+        totalWithdraw: this.total_withdraw
     };
 });
 
@@ -366,6 +580,16 @@ UserSchema.pre('save', async function(next) {
         const salt = await bcrypt.genSalt(SALT_WORK_FACTOR);
         this.moneyTransferPassword = await bcrypt.hash(this.moneyTransferPassword, salt);
         this.isMoneyTransferPasswordSet = true;
+    }
+
+    // Reset daily withdrawal count if it's a new day
+    if (this.isModified('lastWithdrawalDate')) {
+        const today = new Date().toDateString();
+        const lastWithdrawalDay = this.lastWithdrawalDate ? new Date(this.lastWithdrawalDate).toDateString() : null;
+        
+        if (!lastWithdrawalDay || today !== lastWithdrawalDay) {
+            this.withdrawalCountToday = 0;
+        }
     }
 
     next();
@@ -476,6 +700,255 @@ UserSchema.methods.hasUsedPassword = async function(password) {
     );
     
     return isUsed.includes(true);
+};
+
+// Deposit method
+UserSchema.methods.createDeposit = async function({ method, amount, bonusType = 'none' }) {
+    // Validate amount
+    if (amount < 100 || amount > 30000) {
+        throw new Error('Deposit amount must be between 100 and 30,000 BDT');
+    }
+
+    // Create deposit record
+    const deposit = {
+        method,
+        amount,
+        status: 'pending',
+        bonusType,
+        orderId: `DEP-${Date.now()}-${Math.floor(Math.random() * 1000)}`
+    };
+
+    this.depositHistory.push(deposit);
+    await this.save();
+
+    return deposit;
+};
+
+// Complete deposit method
+UserSchema.methods.completeDeposit = async function(orderId, transactionId, bonusAmount = 0) {
+    const deposit = this.depositHistory.find(d => d.orderId === orderId && d.status === 'pending');
+    
+    if (!deposit) {
+        throw new Error('Pending deposit not found');
+    }
+
+    // Update deposit status
+    deposit.status = 'completed';
+    deposit.transactionId = transactionId;
+    deposit.completedAt = new Date();
+    deposit.bonusAmount = bonusAmount;
+    deposit.bonusApplied = bonusAmount > 0;
+
+    // Update balance
+    this.balance += deposit.amount;
+    this.total_deposit += deposit.amount;
+
+    // Handle bonus if applicable
+    if (bonusAmount > 0) {
+        this.bonusBalance += bonusAmount;
+        
+        // Add to active bonuses if it's a special bonus
+        if (deposit.bonusType === 'special_bonus') {
+            this.bonusInfo.activeBonuses.push({
+                bonusType: 'special_bonus',
+                amount: bonusAmount,
+                originalAmount: bonusAmount,
+                wageringRequirement: BONUS_CONFIG.WAGERING_REQUIREMENT
+            });
+        }
+        
+        // Mark first deposit bonus as claimed if applicable
+        if (deposit.bonusType === 'first_deposit' && !this.bonusInfo.firstDepositBonusClaimed) {
+            this.bonusInfo.firstDepositBonusClaimed = true;
+        }
+    }
+
+    // Add transaction record
+    this.transactionHistory.push({
+        type: 'deposit',
+        amount: deposit.amount,
+        balanceBefore: this.balance - deposit.amount,
+        balanceAfter: this.balance,
+        description: `Deposit via ${deposit.method}`,
+        referenceId: transactionId
+    });
+
+    await this.save();
+    return deposit;
+};
+
+// Create withdrawal request
+UserSchema.methods.createWithdrawal = async function({ method, amount, accountNumber }) {
+    // Validate amount
+    if (amount < 300) {
+        throw new Error('Minimum withdrawal amount is 300 BDT');
+    }
+
+    // Check available balance
+    const availableBalance = this.availableBalance;
+    if (amount > availableBalance) {
+        throw new Error(`Insufficient balance. Available: ${availableBalance.toFixed(2)} BDT`);
+    }
+
+    // Check daily withdrawal limit
+    const today = new Date().toDateString();
+    const lastWithdrawalDay = this.lastWithdrawalDate ? new Date(this.lastWithdrawalDate).toDateString() : null;
+    
+    if (lastWithdrawalDay && today === lastWithdrawalDay && this.withdrawalCountToday >= 3) {
+        throw new Error('Maximum 3 withdrawals allowed per day');
+    }
+
+    // Create withdrawal record
+    const withdrawal = {
+        method,
+        amount,
+        netAmount: amount,
+        accountNumber,
+        status: 'pending',
+        orderId: `WD-${Date.now()}-${Math.floor(Math.random() * 1000)}`
+    };
+
+    // Apply commission if wagering requirements not met
+    if (this.total_deposit > 0 && (this.totalWagered || 0) < (this.total_deposit * 3)) {
+        withdrawal.commissionApplied = true;
+        withdrawal.commissionAmount = amount * 0.2;
+        withdrawal.netAmount = amount * 0.8;
+    }
+
+    this.withdrawHistory.push(withdrawal);
+    this.withdrawalCountToday += 1;
+    this.lastWithdrawalDate = new Date();
+    
+    await this.save();
+    return withdrawal;
+};
+
+// Complete withdrawal method
+UserSchema.methods.completeWithdrawal = async function(orderId, transactionId) {
+    const withdrawal = this.withdrawHistory.find(w => w.orderId === orderId && w.status === 'pending');
+    
+    if (!withdrawal) {
+        throw new Error('Pending withdrawal not found');
+    }
+
+    // Update withdrawal status
+    withdrawal.status = 'completed';
+    withdrawal.transactionId = transactionId;
+    withdrawal.completedAt = new Date();
+
+    // Update balance
+    this.balance -= withdrawal.amount;
+    this.total_withdraw += withdrawal.amount;
+
+    // Add transaction record
+    this.transactionHistory.push({
+        type: 'withdrawal',
+        amount: withdrawal.amount,
+        balanceBefore: this.balance + withdrawal.amount,
+        balanceAfter: this.balance,
+        description: `Withdrawal via ${withdrawal.method}`,
+        referenceId: transactionId
+    });
+
+    await this.save();
+    return withdrawal;
+};
+
+// Cancel withdrawal method
+UserSchema.methods.cancelWithdrawal = async function(orderId, reason = 'User cancelled') {
+    const withdrawal = this.withdrawHistory.find(w => w.orderId === orderId && w.status === 'pending');
+    
+    if (!withdrawal) {
+        throw new Error('Pending withdrawal not found');
+    }
+
+    withdrawal.status = 'cancelled';
+    withdrawal.processedAt = new Date();
+    withdrawal.reason = reason;
+
+    // Decrement withdrawal count if it's the same day
+    const today = new Date().toDateString();
+    const withdrawalDay = new Date(withdrawal.createdAt).toDateString();
+    
+    if (today === withdrawalDay) {
+        this.withdrawalCountToday = Math.max(0, this.withdrawalCountToday - 1);
+    }
+
+    await this.save();
+    return withdrawal;
+};
+
+// Apply bet to wagering requirements
+UserSchema.methods.applyBetToWagering = async function(amount) {
+    this.totalWagered += amount;
+    this.total_bet += amount;
+
+    // Update active bonuses
+    if (this.bonusInfo.activeBonuses.length > 0) {
+        for (const bonus of this.bonusInfo.activeBonuses) {
+            if (bonus.status === 'active') {
+                bonus.amountWagered += amount;
+                
+                // Check if wagering requirement is met
+                if (bonus.amountWagered >= (bonus.originalAmount * bonus.wageringRequirement)) {
+                    bonus.status = 'completed';
+                }
+            }
+        }
+        
+        // Remove completed bonuses
+        this.bonusInfo.activeBonuses = this.bonusInfo.activeBonuses.filter(b => b.status !== 'completed');
+    }
+
+    await this.save();
+};
+
+// Cancel bonus with penalty
+UserSchema.methods.cancelBonusWithPenalty = async function() {
+    if (this.bonusBalance <= 0) {
+        throw new Error('No active bonus to cancel');
+    }
+
+    const penaltyAmount = this.bonusBalance * 1.5; // 150% penalty
+    
+    // Deduct penalty from main balance
+    if (this.balance < penaltyAmount) {
+        throw new Error('Insufficient balance to pay penalty');
+    }
+
+    this.balance -= penaltyAmount;
+    
+    // Record cancelled bonus
+    this.bonusInfo.cancelledBonuses.push({
+        bonusType: 'special_bonus', // Assuming it's always special bonus for now
+        amount: this.bonusBalance,
+        penaltyApplied: penaltyAmount,
+        cancelledAt: new Date()
+    });
+
+    // Clear bonus balance
+    this.bonusBalance = 0;
+    
+    // Mark all active bonuses as cancelled
+    this.bonusInfo.activeBonuses = this.bonusInfo.activeBonuses.map(bonus => {
+        if (bonus.status === 'active') {
+            bonus.status = 'cancelled';
+        }
+        return bonus;
+    });
+
+    // Add transaction record
+    this.transactionHistory.push({
+        type: 'penalty',
+        amount: penaltyAmount,
+        balanceBefore: this.balance + penaltyAmount,
+        balanceAfter: this.balance,
+        description: 'Bonus cancellation penalty',
+        referenceId: `PEN-${Date.now()}`
+    });
+
+    await this.save();
+    return penaltyAmount;
 };
 
 // ========== STATICS ==========

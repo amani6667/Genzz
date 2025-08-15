@@ -12,7 +12,7 @@ import Referel from './pages/refer/Referel'
 import FAQ from './pages/faq/FAQ'
 import Affiliateprogramme from './pages/affiliate/Affiliateprogramme'
 import Vipclub from './pages/club/Vipclub'
-import GameProviders from './components/GameProviders/GameProviders'
+import GameProviders from './components/provider/GameProviders'
 
 const App = () => {
   const [isLoading, setIsLoading] = useState(true)

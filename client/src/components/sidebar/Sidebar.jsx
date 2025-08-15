@@ -40,12 +40,14 @@ import {
   FaTimesCircle ,
   
 } from 'react-icons/fa';
+import { FaCheck } from "react-icons/fa";
 import { MdEmail } from "react-icons/md";
 import { FaLock } from "react-icons/fa";
 import { FaEyeSlash } from 'react-icons/fa';
 import { useUser } from '../../context/UserContext';
 import { FaUser } from "react-icons/fa";
 import { IoClose } from "react-icons/io5";
+import { FaBangladeshiTakaSign } from "react-icons/fa6";
 import axios from "axios"
 import toast,{Toaster} from "react-hot-toast"
 import popular_img from "../../assets/popular.png"
@@ -56,6 +58,15 @@ import affiliate_img from "../../assets/affiliate.png"
 import question_img from "../../assets/question.png"
 import teamwork_img from "../../assets/teamwork.png"
 import party_img from "../../assets/party.png"
+import link_img from "../../assets/link.png"
+// ------------------proifle-images--------------------
+import man from "../../assets/profileimages/man.png"
+import man1 from "../../assets/profileimages/man1.png"
+import man2 from "../../assets/profileimages/man2.png"
+import man3 from "../../assets/profileimages/man3.png"
+import man4 from "../../assets/profileimages/man4.png"
+import man5 from "../../assets/profileimages/man5.png"
+import man6 from "../../assets/profileimages/man6.png"
 
 const menuItems = [
   { 
@@ -79,7 +90,7 @@ const menuItems = [
     leftTab: 'পুরস্কার কেন্দ্র' // This will open the profile popup with the "পুরস্কার কেন্দ্র" tab selected
   },
   { 
-    icon: popular_img, 
+    icon: teamwork_img, 
     label: 'প্রভাইডার',
     path: '/provider' 
   },
@@ -94,7 +105,7 @@ const menuItems = [
     path: '/vip-club' 
   },
   { 
-    icon: teamwork_img, 
+    icon: link_img, 
     label: 'রেফারেল প্রোগ্রাম'
     // This will open the InvitePopup if logged in, or login popup if not
   },
@@ -111,11 +122,11 @@ const leftMenuItems = [
   'উত্তোলন',
   'বেটিং রেকর্ড',
   'অ্যাকাউন্ট রেকর্ড',
-  'লাভ ও ক্ষতি',
-  'পুরস্কার কেন্দ্র',
+  // 'লাভ ও ক্ষতি',
+  // 'পুরস্কার কেন্দ্র',
   'বন্ধুর আমন্ত্রণ করুন',
-  'মিশন',
-  'অভ্যন্তরীণ বার্তা',
+  // 'মিশন',
+  // 'অভ্যন্তরীণ বার্তা',
 ];
 const Sidebar = ({ showPopup, setShowPopup, activeLeftTab, setActiveLeftTab }) => {
   const [selectedMenu, setSelectedMenu] = useState(null);
@@ -968,9 +979,9 @@ const Popup = ({ onClose, selectedMenu, activeLeftTab, setActiveLeftTab }) => {
     </div>
   );
 };
-
 const InvitePopup = ({ onClose }) => {
   const [copied, setCopied] = useState(false);
+  const [activeTab, setActiveTab] = useState('invite');
   const { userData } = useUser();
   const base_url = import.meta.env.VITE_API_KEY_Base_URL;
 
@@ -996,117 +1007,207 @@ const InvitePopup = ({ onClose }) => {
 
   return (
     <div className="fixed inset-0 z-[10000] flex items-center justify-center backdrop-blur-sm bg-black/50 p-4">
-      <div className="bg-gradient-to-br from-gray-800 to-gray-900 text-white rounded-xl shadow-2xl max-w-md w-full relative border border-gray-700 overflow-hidden">
+      <div className="bg-gray-800 p-4 rounded-lg border border-gray-700 max-w-xl w-full relative">
         <button 
-          className="absolute top-5 right-5 cursor-pointer text-gray-300 hover:text-white text-lg transition-colors" 
+          className="absolute top-4 right-4 cursor-pointer text-gray-300 hover:text-white text-lg transition-colors" 
           onClick={onClose}
         >
           <FaTimes />
         </button>
         
-        <div className="p-6">
-          <div className="text-center mb-6">
-            <h3 className="text-2xl font-bold text-cyan-400 mb-1">Invite Friends</h3>
-            <p className="text-gray-400">Earn rewards when your friends join</p>
+        <h3 className="text-lg font-semibold mb-4 text-white">বন্ধুর আমন্ত্রণ</h3>
+        <div className="bg-gray-700 p-4 rounded shadow border text-white border-gray-600">
+          <div className="flex gap-2 mb-4">
+            <button
+              className={`px-3 py-1 rounded text-sm ${activeTab === 'invite' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'}`}
+              onClick={() => setActiveTab('invite')}
+            >
+              আমন্ত্রণ
+            </button>
+            <button
+              className={`px-3 py-1 rounded text-sm ${activeTab === 'list' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'}`}
+              onClick={() => setActiveTab('list')}
+            >
+              আমন্ত্রিত তালিকা
+            </button>
+            <button
+              className={`px-3 py-1 rounded text-sm ${activeTab === 'reward' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'}`}
+              onClick={() => setActiveTab('reward')}
+            >
+              পুরস্কার
+            </button>
           </div>
-          
-          <div className="space-y-6">
+
+          {activeTab === 'invite' && (
             <div>
-              <p className="text-gray-300 mb-2 text-sm font-medium">Your referral link</p>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  className="flex-1 p-3 border border-gray-600 rounded-lg bg-gray-700 text-white text-sm"
-                  value={userData?.referralCode ? `${base_url}/ref/${userData.referralCode}` : base_url}
-                  readOnly
-                />
-                <button 
-                  onClick={copyReferralLink}
-                  className={`px-4 py-3 rounded-lg flex items-center gap-1 text-sm font-medium transition-colors ${
-                    copied ? 'bg-green-500 text-white' : 'bg-cyan-500 hover:bg-cyan-600 text-gray-900'
-                  }`}
-                >
-                  {copied ? 'Copied!' : <FaCopy />}
-                </button>
-              </div>
-            </div>
-            
-            <div>
-              <p className="text-gray-300 mb-2 text-sm font-medium">Share via</p>
-              <div className="flex justify-center gap-4">
-                <a 
-                  href={shareLinks.facebook} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="bg-[#1877F2] hover:bg-[#166FE5] text-white p-3 rounded-full transition-colors"
-                >
-                  <FaFacebookF size={16} />
-                </a>
-                <a 
-                  href={shareLinks.twitter} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="bg-[#1DA1F2] hover:bg-[#1A91DA] text-white p-3 rounded-full transition-colors"
-                >
-                  <FaTwitter size={16} />
-                </a>
-                <a 
-                  href={shareLinks.telegram} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="bg-[#0088CC] hover:bg-[#007AB8] text-white p-3 rounded-full transition-colors"
-                >
-                  <FaTelegramPlane size={16} />
-                </a>
-                <a 
-                  href={shareLinks.whatsapp} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="bg-[#25D366] hover:bg-[#22C35E] text-white p-3 rounded-full transition-colors"
-                >
-                  <FaWhatsapp size={16} />
-                </a>
-              </div>
-            </div>
-            
-            {userData && (
-              <div className="bg-gray-700/30 p-4 rounded-lg border border-gray-600/50">
-                <div className="flex items-center justify-around">
-                  <div className="text-center">
-                    <p className="text-gray-400 text-xs">Invited</p>
-                    <p className="text-cyan-400 font-bold text-xl">{userData.referrals || 0}</p>
-                  </div>
-                  <div className="h-8 w-px bg-gray-600"></div>
-                  <div className="text-center">
-                    <p className="text-gray-400 text-xs">Earnings</p>
-                    <p className="text-green-400 font-bold text-xl">৳{userData.referralEarnings || 0}</p>
-                  </div>
+              <div className="mb-4 p-4 bg-gray-800 rounded-lg border border-gray-600">
+                <h4 className="font-medium mb-2">আপনার রেফারেল লিঙ্ক</h4>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    className="flex-1 p-2 border border-gray-600 rounded bg-gray-700 text-white text-sm"
+                    value={userData?.referralCode ? `${base_url}/ref/${userData.referralCode}` : base_url}
+                    readOnly
+                  />
+                  <button 
+                    onClick={copyReferralLink}
+                    className={`bg-cyan-500 hover:bg-cyan-600 text-gray-900 px-3 py-2 rounded flex items-center gap-1 text-sm ${
+                      copied ? 'bg-green-500 hover:bg-green-600' : ''
+                    }`}
+                  >
+                    {copied ? 'কপি হয়েছে!' : <><FaCopy /> কপি</>}
+                  </button>
                 </div>
               </div>
-            )}
-            
-            <div className="bg-gray-700/20 p-4 rounded-lg border border-dashed border-gray-600/50">
-              <h4 className="font-medium mb-2 text-cyan-400 text-center">How it works</h4>
-              <ul className="space-y-2 text-sm text-gray-300">
-                <li className="flex items-start gap-2">
-                  <span className="text-cyan-400 mt-0.5">•</span>
-                  <span>Get ৳50 when friend deposits ৳500</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-cyan-400 mt-0.5">•</span>
-                  <span>Friend gets ৳20 bonus too</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-cyan-400 mt-0.5">•</span>
-                  <span>Earn 10% from their Level 1 referrals</span>
-                </li>
-              </ul>
+              
+              <div className="mb-4">
+                <h4 className="font-medium mb-2">সোশ্যাল মিডিয়ায় শেয়ার করুন</h4>
+                <div className="flex gap-2">
+                  <a 
+                    href={shareLinks.facebook} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full transition-colors"
+                  >
+                    <FaFacebookF size={14} />
+                  </a>
+                  <a 
+                    href={shareLinks.twitter} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="bg-blue-400 hover:bg-blue-500 text-white p-2 rounded-full transition-colors"
+                  >
+                    <FaTwitter size={14} />
+                  </a>
+                  <a 
+                    href={shareLinks.telegram} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full transition-colors"
+                  >
+                    <FaTelegramPlane size={14} />
+                  </a>
+                  <a 
+                    href={shareLinks.whatsapp} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="bg-green-500 hover:bg-green-600 text-white p-2 rounded-full transition-colors"
+                  >
+                    <FaWhatsapp size={14} />
+                  </a>
+                </div>
+              </div>
+              
+              <div className="p-4 bg-gray-800 rounded-lg border border-gray-600">
+                <h4 className="font-medium mb-2">আমন্ত্রণ নিয়ম</h4>
+                <ul className="list-disc pl-5 text-sm text-gray-400 space-y-1">
+                  <li>প্রতিটি সফল আমন্ত্রণের জন্য আপনি 50 টাকা বোনাস পাবেন</li>
+                  <li>আপনার আমন্ত্রিত বন্ধুকে ন্যূনতম 500 টাকা ডিপোজিট করতে হবে</li>
+                  <li>আপনার আমন্ত্রিত বন্ধুকে ন্যূনতম 3টি বেট প্লেস করতে হবে</li>
+                </ul>
+              </div>
             </div>
-          </div>
+          )}
+          
+          {activeTab === 'list' && (
+            <div className="overflow-x-auto">
+              <table className="min-w-full border border-gray-600">
+                <thead className="bg-gray-800">
+                  <tr>
+                    <th className="py-2 px-4 text-left text-sm border-b border-gray-600">ব্যবহারকারীর নাম</th>
+                    <th className="py-2 px-4 text-left text-sm border-b border-gray-600">যোগদানের তারিখ</th>
+                    <th className="py-2 px-4 text-left text-sm border-b border-gray-600">স্ট্যাটাস</th>
+                    <th className="py-2 px-4 text-left text-sm border-b border-gray-600">পুরস্কার</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td colSpan="4" className="py-4 text-center text-gray-500">
+                      {userData?.referrals?.length > 0 ? (
+                        userData.referrals.map(referral => (
+                          <tr key={referral.id}>
+                            <td className="py-2 px-4 border-b border-gray-600">{referral.username}</td>
+                            <td className="py-2 px-4 border-b border-gray-600">{new Date(referral.joinedAt).toLocaleDateString()}</td>
+                            <td className="py-2 px-4 border-b border-gray-600">{referral.status}</td>
+                            <td className="py-2 px-4 border-b border-gray-600">৳{referral.reward || 0}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        'কোন আমন্ত্রিত বন্ধু পাওয়া যায়নি'
+                      )}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
+          
+          {activeTab === 'reward' && (
+            <div>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="bg-gray-800 p-4 rounded shadow border border-gray-600">
+                  <p className="text-sm text-gray-400">মোট আমন্ত্রণ</p>
+                  <p className="text-xl font-bold text-cyan-400">{userData?.referrals?.length || 0}</p>
+                </div>
+                <div className="bg-gray-800 p-4 rounded shadow border border-gray-600">
+                  <p className="text-sm text-gray-400">মোট পুরস্কার</p>
+                  <p className="text-xl font-bold text-cyan-400">৳{userData?.referralEarnings || 0}</p>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-full border border-gray-600">
+                  <thead className="bg-gray-800">
+                    <tr>
+                      <th className="py-2 px-4 text-left text-sm border-b border-gray-600">তারিখ</th>
+                      <th className="py-2 px-4 text-left text-sm border-b border-gray-600">আমন্ত্রিত বন্ধু</th>
+                      <th className="py-2 px-4 text-left text-sm border-b border-gray-600">পুরস্কার</th>
+                      <th className="py-2 px-4 text-left text-sm border-b border-gray-600">স্ট্যাটাস</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td colSpan="4" className="py-4 text-center text-gray-500">
+                        {userData?.referralRewards?.length > 0 ? (
+                          userData.referralRewards.map(reward => (
+                            <tr key={reward.id}>
+                              <td className="py-2 px-4 border-b border-gray-600">{new Date(reward.date).toLocaleDateString()}</td>
+                              <td className="py-2 px-4 border-b border-gray-600">{reward.username}</td>
+                              <td className="py-2 px-4 border-b border-gray-600">৳{reward.amount}</td>
+                              <td className="py-2 px-4 border-b border-gray-600">{reward.status}</td>
+                            </tr>
+                          ))
+                        ) : (
+                          'কোন পুরস্কার রেকর্ড পাওয়া যায়নি'
+                        )}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
+};
+
+// Create an array of all profile images
+const profileImages = [man, man1, man2, man3, man4, man5, man6];
+
+// Function to get a consistent random image based on username
+const getProfileImage = (username) => {
+  if (!username) return man; // default image if no username
+  
+  // Create a simple hash from the username to get a consistent index
+  let hash = 0;
+  for (let i = 0; i < username.length; i++) {
+    hash = username.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  
+  // Use absolute value and modulo to get a valid index
+  const index = Math.abs(hash) % profileImages.length;
+  return profileImages[index];
 };
 
 const AccountTabContent = () => {
@@ -1142,14 +1243,19 @@ const AccountTabContent = () => {
   const [showMobileAlert, setShowMobileAlert] = useState(false);
   const [alertContext, setAlertContext] = useState(''); // 'deposit' or 'withdraw'
 
-  // State for history data
-  const [depositHistory, setDepositHistory] = useState([]);
-  const [withdrawalHistory, setWithdrawalHistory] = useState([]);
-  const [betHistory, setBetHistory] = useState([]);
-  const [referralHistory, setReferralHistory] = useState([]);
+  // State for editable username
+  const [editableUsername, setEditableUsername] = useState('');
+  const [isEditingUsername, setIsEditingUsername] = useState(false);
 
-  // Tab management - Security tab moved to first position
-  const tabs = ['নিরাপত্তা', 'পাসওয়ার্ড আপডেট', 'সারাংশ', 'পুরস্কার', 'আয়', 'রেফার', 'আমন্ত্রণ তালিকা'];
+  // Initialize editable username when userData loads
+  useEffect(() => {
+    if (userData?.username) {
+      setEditableUsername(userData.username);
+    }
+  }, [userData]);
+
+  // Tab management
+  const tabs = ['ব্যক্তিগত তথ্য', 'নিরাপত্তা', 'পাসওয়ার্ড আপডেট'];
   const [selectedTab, setSelectedTab] = useState(tabs[0]);
 
   // Format date to Bengali
@@ -1172,6 +1278,13 @@ const AccountTabContent = () => {
     return `${firstPart}****${lastPart}`;
   };
 
+  // Format balance with Bengali digits and commas
+  const formatBalance = (amount) => {
+    if (amount === undefined || amount === null) return '০.০০';
+    const formatted = new Intl.NumberFormat('en-US').format(amount.toFixed(2));
+    return formatted.replace(/\d/g, d => '০১২৩৪৫৬৭৮৯'[d]);
+  };
+
   // Show mobile number alert when trying to deposit/withdraw
   const checkMobileBeforeAction = (actionType) => {
     if (!userData?.phone) {
@@ -1180,100 +1293,6 @@ const AccountTabContent = () => {
       return false;
     }
     return true;
-  };
-
-  // Example functions that would trigger the mobile check
-  const handleDepositClick = () => {
-    if (checkMobileBeforeAction('deposit')) {
-      // Proceed with deposit
-      console.log('Proceeding with deposit');
-    }
-  };
-
-  const handleWithdrawClick = () => {
-    if (checkMobileBeforeAction('withdraw')) {
-      // Proceed with withdrawal
-      console.log('Proceeding with withdrawal');
-    }
-  };
-
-  // Load history data when tab changes
-  useEffect(() => {
-    if (selectedTab === 'সারাংশ') {
-      fetchBetHistory();
-    } else if (selectedTab === 'পুরস্কার') {
-      fetchReferralHistory();
-    } else if (selectedTab === 'আয়') {
-      fetchDepositHistory();
-    } else if (selectedTab === 'রেফার') {
-      fetchReferralHistory();
-    }
-  }, [selectedTab]);
-
-  // Fetch deposit history with Axios
-  const fetchDepositHistory = async () => {
-    try {
-      const response = await axios.get(`${base_url}/user/deposit-history/${userData._id}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      setDepositHistory(response.data.data);
-    } catch (err) {
-      console.error('Failed to fetch deposit history:', err);
-    }
-  };
-
-  // Fetch withdrawal history with Axios
-  const fetchWithdrawalHistory = async () => {
-    try {
-      const response = await axios.get(`${base_url}/user/withdrawal-history/${userData._id}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      setWithdrawalHistory(response.data.data);
-    } catch (err) {
-      console.error('Failed to fetch withdrawal history:', err);
-    }
-  };
-
-  // Fetch bet history with Axios
-  const fetchBetHistory = async () => {
-    try {
-      const response = await axios.get(`${base_url}/user/bet-history/${userData._id}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      setBetHistory(response.data.data);
-    } catch (err) {
-      console.error('Failed to fetch bet history:', err);
-    }
-  };
-
-  // Fetch referral history with Axios
-  const fetchReferralHistory = async () => {
-    try {
-      const response = await axios.get(`${base_url}/user/referral-history/${userData._id}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      setReferralHistory(response.data.data.referredUsers || []);
-    } catch (err) {
-      console.error('Failed to fetch referral history:', err);
-    }
-  };
-
-  const copyReferralLink = () => {
-    const referralLink = `${base_url}/ref/${userData?.referralCode || 't4590050297'}`;
-    navigator.clipboard.writeText(referralLink);
-    setFeedback({
-      type: 'success',
-      message: 'রেফারেল লিঙ্ক কপি করা হয়েছে!',
-      field: 'referral'
-    });
   };
 
   const handleAddMobile = async (e) => {
@@ -1351,7 +1370,7 @@ const AccountTabContent = () => {
     }
 
     try {
-      const response = await axios.put(`${base_url}/update-account-password`, {
+      const response = await axios.put(`${base_url}/user/update-account-password`, {
         userId: userData._id,
         currentPassword: currentLoginPassword,
         newPassword: newLoginPassword
@@ -1399,7 +1418,7 @@ const AccountTabContent = () => {
     }
 
     try {
-      const response = await axios.put(`${base_url}/update-transaction-password`, {
+      const response = await axios.put(`${base_url}/user/update-transaction-password`, {
         userId: userData._id,
         currentPassword: currentTransactionPassword,
         newPassword: newTransactionPassword
@@ -1432,93 +1451,50 @@ const AccountTabContent = () => {
       });
     }
   };
+const handleUsernameUpdate = async () => {
+  try {
+    const response = await axios.put(
+      `${base_url}/user/update-username`,
+      {
+        userId: userData._id,
+        newUsername: editableUsername,
+        password: currentLoginPassword // Add current password for verification
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      }
+    );
+
+    setFeedback({
+      type: 'success',
+      message: 'ব্যবহারকারীর নাম সফলভাবে আপডেট করা হয়েছে!',
+      field: 'personalInfo'
+    });
+
+    setIsEditingUsername(false);
+    // Clear password field after successful update
+    setCurrentLoginPassword('');
+    fetchUserData();
+
+  } catch (err) {
+    setFeedback({
+      type: 'error',
+      message: err.response?.data?.message || 'ব্যবহারকারীর নাম আপডেট করতে ব্যর্থ হয়েছে',
+      field: 'personalInfo'
+    });
+  }
+};
 
   if (loading) return <div className="text-white text-center py-8">লোড হচ্ছে...</div>;
   if (error) return <div className="text-center py-8 text-red-500">ত্রুটি: {error}</div>;
 
   return (
     <div className="text-white">
-      {/* Mobile Number Alert Modal */}
-      {showMobileAlert && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 p-6 rounded-lg max-w-md w-full border border-cyan-500">
-            <h3 className="text-lg font-bold text-cyan-400 mb-4">মোবাইল নম্বর প্রয়োজন</h3>
-            <p className="mb-4">আপনাকে {alertContext === 'deposit' ? 'ডিপোজিট করতে' : 'উইথড্র করতে'} আপনার মোবাইল নম্বর যোগ করতে হবে।</p>
-            
-            <div className="mb-4">
-              <label className="block text-sm text-gray-400 mb-1">মোবাইল নম্বর</label>
-              <input
-                type="text"
-                className="w-full p-2 border border-gray-600 rounded bg-gray-800 text-white text-sm"
-                value={mobileNumber}
-                onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, ''))}
-                placeholder="01688XXXXXXXX"
-                maxLength={15}
-              />
-            </div>
-            
-            <div className="mb-4">
-              <label className="block text-sm text-gray-400 mb-1">লেনদেন পাসওয়ার্ড</label>
-              <div className="relative">
-                <input
-                  type={showTransactionPassword ? "text" : "password"}
-                  className="w-full p-2 border border-gray-600 rounded bg-gray-800 text-white text-sm"
-                  value={mobileTransactionPassword}
-                  onChange={(e) => setMobileTransactionPassword(e.target.value)}
-                  required
-                  minLength={6}
-                />
-                <button
-                  type="button"
-                  className="absolute right-2 top-2 text-gray-500 hover:text-gray-300"
-                  onClick={() => setShowTransactionPassword(!showTransactionPassword)}
-                >
-                  {showTransactionPassword ? <FaEyeSlash /> : <FaEye />}
-                </button>
-              </div>
-            </div>
-            
-            <div className="mb-4">
-              <label className="block text-sm text-gray-400 mb-1">পাসওয়ার্ড নিশ্চিত করুন</label>
-              <div className="relative">
-                <input
-                  type={showTransactionPassword ? "text" : "password"}
-                  className="w-full p-2 border border-gray-600 rounded bg-gray-800 text-white text-sm"
-                  value={confirmMobileTransactionPassword}
-                  onChange={(e) => setConfirmMobileTransactionPassword(e.target.value)}
-                  required
-                  minLength={6}
-                />
-                <button
-                  type="button"
-                  className="absolute right-2 top-2 text-gray-500 hover:text-gray-300"
-                  onClick={() => setShowTransactionPassword(!showTransactionPassword)}
-                >
-                  {showTransactionPassword ? <FaEyeSlash /> : <FaEye />}
-                </button>
-              </div>
-            </div>
-            
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setShowMobileAlert(false)}
-                className="px-4 py-2 bg-gray-700 rounded text-sm"
-              >
-                বাতিল
-              </button>
-              <button
-                onClick={handleAddMobile}
-                className="px-4 py-2 bg-cyan-500 hover:bg-cyan-600 text-gray-900 rounded text-sm"
-              >
-                মোবাইল সংরক্ষণ করুন
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Feedback messages */}
-      {feedback.message && (
+      {/* {feedback.message && (
         <div className={`mb-4 p-3 rounded ${feedback.type === 'success' ? 'bg-green-800 text-green-100' : 'bg-red-800 text-red-100'}`}>
           {feedback.message}
           <button 
@@ -1528,40 +1504,46 @@ const AccountTabContent = () => {
             &times;
           </button>
         </div>
-      )}
+      )} */}
 
-      <div className="grid grid-cols-1 gap-4 mb-6">
-        {/* Profile Info */}
-        <div className="bg-gray-800 p-4 rounded-lg shadow col-span-1 border border-gray-700">
-          <div className="flex items-center gap-3">
-            <img
-              src={userData?.avatar || "https://i.ibb.co/k6pqKkL/avatar.jpg"}
-              alt="User"
-              className="w-14 h-14 rounded-full border-2 border-cyan-400"
-            />
-            <div>
-              <p className="text-sm font-semibold">{userData?.username || 't4590050297'}</p>
-              <p className="text-xs text-gray-400">
-                যোগদান করেছেন: {formatDateToBengali(userData?.createdAt) || '২০২৫-০৭-২৭'}
-              </p>
+      {/* Profile Info */}
+      <div className="bg-gradient-to-br from-gray-800 to-gray-900 p-4 rounded-lg shadow mb-6 border border-gray-700">
+        <div className="flex items-center gap-4">
+          <div className="relative">
+         <img
+    src={getProfileImage(userData?.username)}
+    alt="User"
+    className="w-16 h-16 rounded-full border-2 border-cyan-400 object-cover"
+  />
+            
+          </div>
+          <div className="flex-1">
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="text-lg font-bold">{userData?.username || 'N/A'}</h3>
+                <p className="text-sm text-gray-400">
+                  আইডি: {userData?.player_id } | লেভেল: {userData?.level || '1'}
+                </p>
+              </div>
+              {/* <span className="bg-cyan-500 bg-opacity-20 text-white text-xs px-2 py-1 rounded-full">
+                {userData?.isVIP ? 'VIP Member' : 'Regular Member'}
+              </span> */}
+            </div>
+            <div className="mt-2 text-sm text-gray-400">
+              <p>যোগদান করেছেন: {formatDateToBengali(userData?.createdAt) || 'N/A'}</p>
+              <p>সর্বশেষ লগইন: {formatDateToBengali(userData?.last_login) || 'N/A'}</p>
             </div>
           </div>
-          <div className="mt-4 text-xl font-bold text-cyan-400">
-            ৳ {userData?.balance?.toLocaleString('bn-BD') || '০.০০'}
-          </div>
-          <ul className="mt-4 space-y-2 text-sm text-gray-400">
-            <li>{userData?.depositHistory?.length || 0} সক্রিয় ডিপোজিট অনুরোধ</li>
-            <li>{userData?.withdrawHistory?.length || 0} সক্রিয় উত্তোলন অনুরোধ</li>
-          </ul>
         </div>
       </div>
 
+      {/* Tabs Navigation */}
       <div className="flex border-b border-gray-700 mb-6 overflow-x-auto">
         {tabs.map((tab) => (
           <button
             key={tab}
             onClick={() => setSelectedTab(tab)}
-            className={`px-5 py-3 font-medium text-sm border-b-2 transition-colors whitespace-nowrap ${
+            className={`px-5 py-3 font-medium cursor-pointer text-sm border-b-2 transition-colors whitespace-nowrap ${
               selectedTab === tab
                 ? 'border-cyan-400 text-cyan-400'
                 : 'border-transparent text-gray-400 hover:text-cyan-400'
@@ -1572,55 +1554,463 @@ const AccountTabContent = () => {
         ))}
       </div>
 
-      {selectedTab === 'নিরাপত্তা' && (
-        <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-          <h3 className="text-lg font-semibold mb-4">অ্যাকাউন্ট নিরাপত্তা</h3>
-          
-          {/* Mobile Number Section */}
-          <div className="bg-gray-700 p-4 rounded shadow mb-6 border border-gray-600">
-            <h4 className="font-medium mb-4 text-cyan-400">মোবাইল নম্বর</h4>
-            {userData?.phone ? (
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-400">আপনার মোবাইল নম্বর</p>
-                  <p className="text-white">{formatMobileNumber(userData.phone)}</p>
+      {/* Tab Contents */}
+      <div className="bg-gradient-to-br from-gray-800 to-gray-900 p-4 rounded-lg border border-gray-700 shadow-lg">
+        {selectedTab === 'ব্যক্তিগত তথ্য' && (
+          <div>
+            <h3 className="text-lg font-semibold mb-4 text-cyan-400">ব্যক্তিগত তথ্য</h3>
+            
+            {/* Balance Cards */}
+          {/* Balance Cards - All 5 Cards */}
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  {/* Main Balance */}
+  <div className="bg-gradient-to-br from-blue-900 to-blue-800 p-4 rounded-lg border border-blue-700 shadow">
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm text-blue-200">মেইন ব্যালেন্স</p>
+        <p className="text-2xl font-bold">{formatBalance(userData?.balance)} ৳</p>
+      </div>
+      <div className="bg-blue-700 bg-opacity-30 p-2 rounded-full">
+      <FaBangladeshiTakaSign/>
+      </div>
+    </div>
+  </div>
+
+  {/* Bonus Balance */}
+  <div className="bg-gradient-to-br from-purple-900 to-purple-800 p-4 rounded-lg border border-purple-700 shadow">
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm text-purple-200">বোনাস ব্যালেন্স</p>
+        <p className="text-2xl font-bold">{formatBalance(userData?.bonus_balance)} ৳</p>
+      </div>
+      <div className="bg-purple-700 bg-opacity-30 p-2 rounded-full">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-purple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.933 12.8a1 1 0 000-1.6L6.6 7.2A1 1 0 005 8v8a1 1 0 001.6.8l5.333-4zM19.933 12.8a1 1 0 000-1.6l-5.333-4A1 1 0 0013 8v8a1 1 0 001.6.8l5.333-4z" />
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  {/* Referral Balance */}
+  <div className="bg-gradient-to-br from-green-900 to-green-800 p-4 rounded-lg border border-green-700 shadow">
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm text-green-200">রেফারেল ব্যালেন্স</p>
+        <p className="text-2xl font-bold">{formatBalance(userData?.refer_balance)} ৳</p>
+      </div>
+      <div className="bg-green-700 bg-opacity-30 p-2 rounded-full">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  {/* Wager Remaining */}
+  <div className="bg-gradient-to-br from-amber-900 to-amber-800 p-4 rounded-lg border border-amber-700 shadow">
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm text-amber-200">ওয়েজার বাকি</p>
+        <p className="text-2xl font-bold">{formatBalance(userData?.wager_remaining || 0)} ৳</p>
+      </div>
+      <div className="bg-amber-700 bg-opacity-30 p-2 rounded-full">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-amber-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  {/* Wager Completed */}
+  <div className="bg-gradient-to-br from-emerald-900 to-emerald-800 p-4 rounded-lg border border-emerald-700 shadow">
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm text-emerald-200">ওয়েজার সম্পন্ন</p>
+        <p className="text-2xl font-bold">{formatBalance(userData?.wager_completed || 0)} ৳</p>
+      </div>
+      <div className="bg-emerald-700 bg-opacity-30 p-2 rounded-full">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-emerald-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>
+      <div className="bg-gray-700 bg-opacity-50 p-4 rounded-lg shadow mb-6 border border-gray-600">
+  {feedback.field === 'personalInfo' && (
+    <div className={`mb-3 p-3 rounded text-sm ${
+      feedback.type === 'success' ? 'bg-green-900 text-green-100' : 'bg-red-900 text-red-100'
+    }`}>
+      {feedback.message}
+    </div>
+  )}
+  
+  <div className="space-y-4">
+    {/* Player ID (non-editable) */}
+    <div>
+      <label className="block text-sm text-gray-400 mb-1">প্লেয়ার আইডি</label>
+      <input
+        type="text"
+        className="w-full p-2 border border-gray-600 rounded bg-gray-800 text-white text-sm cursor-not-allowed"
+        value={userData?.player_id || 'N/A'}
+        readOnly
+      />
+    </div>
+    
+    {/* Email (non-editable) */}
+    <div>
+      <label className="block text-sm text-gray-400 mb-1">ইমেইল</label>
+      <input
+        type="text"
+        className="w-full p-2 border border-gray-600 rounded bg-gray-800 text-white text-sm cursor-not-allowed"
+        value={userData?.email || 'N/A'}
+        readOnly
+      />
+    </div>
+    
+    {/* Username (editable) */}
+    <div>
+      <label className="block text-sm text-gray-400 mb-1">ব্যবহারকারীর নাম</label>
+      <div className="flex gap-2">
+        <input
+          type="text"
+          className={`flex-1 p-2 border rounded text-sm ${
+            isEditingUsername 
+              ? 'border-cyan-400 bg-gray-800 text-white' 
+              : 'border-gray-600 bg-gray-800 text-white cursor-not-allowed'
+          }`}
+          value={editableUsername}
+          onChange={(e) => setEditableUsername(e.target.value)}
+          readOnly={!isEditingUsername}
+        />
+        {isEditingUsername ? (
+          <>
+            <button
+              onClick={handleUsernameUpdate}
+              className="bg-green-500 hover:bg-green-600 cursor-pointer text-white px-3 py-1 rounded text-sm"
+            >
+              সংরক্ষণ
+            </button>
+            <button
+              onClick={() => {
+                setIsEditingUsername(false);
+                setEditableUsername(userData?.username || '');
+                setCurrentLoginPassword('');
+              }}
+              className="bg-red-500 hover:bg-red-600 cursor-pointer text-white px-3 py-1 rounded text-sm"
+            >
+              বাতিল
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={() => setIsEditingUsername(true)}
+            className="bg-cyan-500 hover:bg-cyan-600 cursor-pointer text-white px-3 py-1 rounded text-sm"
+          >
+            সম্পাদনা
+          </button>
+        )}
+      </div>
+    </div>
+
+    {/* Password verification when editing username */}
+    {isEditingUsername && (
+      <div className="mt-2">
+        <label className="block text-sm text-gray-400 mb-1">বর্তমান পাসওয়ার্ড</label>
+        <div className="relative">
+          <input
+            type={showLoginPassword ? "text" : "password"}
+            className="w-full p-2 border border-gray-600 rounded bg-gray-800 text-white text-sm"
+            value={currentLoginPassword}
+            onChange={(e) => setCurrentLoginPassword(e.target.value)}
+            placeholder="পাসওয়ার্ড দিন"
+            required
+          />
+          <button
+            type="button"
+            className="absolute right-2 top-2 text-gray-500 hover:text-gray-300"
+            onClick={() => setShowLoginPassword(!showLoginPassword)}
+          >
+            {showLoginPassword ? <FaEyeSlash /> : <FaEye />}
+          </button>
+        </div>
+        <p className="text-xs text-gray-500 mt-1">ব্যবহারকারীর নাম পরিবর্তন করতে আপনার বর্তমান পাসওয়ার্ড প্রয়োজন</p>
+      </div>
+    )}
+  </div>
+</div>
+          </div>
+        )}
+
+        {selectedTab === 'নিরাপত্তা' && (
+          <div>
+            <h3 className="text-lg font-semibold mb-4 text-cyan-400">অ্যাকাউন্ট নিরাপত্তা</h3>
+            
+            {/* Mobile Number Section */}
+            <div className="bg-gray-700 bg-opacity-50 p-4 rounded-lg shadow mb-6 border border-gray-600">
+              <h4 className="font-medium mb-4 text-cyan-400 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
+                মোবাইল নম্বর
+              </h4>
+              {userData?.phone ? (
+                <div className="flex items-center justify-between bg-gray-800 p-3 rounded">
+                  <div>
+                    <p className="text-sm text-gray-400">আপনার মোবাইল নম্বর</p>
+                    <p className="text-white font-medium">{formatMobileNumber(userData.phone)}</p>
+                  </div>
+                  <span className="bg-green-50 bg-opacity-20 text-green-600 text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    যাচাইকৃত
+                  </span>
                 </div>
-                <span className="text-green-500 text-sm">যাচাইকৃত</span>
-              </div>
-            ) : (
-              <>
-                {feedback.field === 'mobile' && (
-                  <div className={`mb-3 p-2 rounded text-sm ${
+              ) : (
+                <>
+                  {feedback.field === 'mobile' && (
+                    <div className={`mb-3 p-3 rounded text-sm ${
+                      feedback.type === 'success' ? 'bg-green-900 text-green-100' : 'bg-red-900 text-red-100'
+                    }`}>
+                      {feedback.message}
+                    </div>
+                  )}
+                  <div className="bg-yellow-500 bg-opacity-10 border text-gray-700 border-yellow-500 border-opacity-30 p-3 rounded mb-4">
+                    <p className="text-sm  flex items-center gap-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                      লেনদেনের জন্য আপনাকে আপনার মোবাইল নম্বর যোগ করতে হবে
+                    </p>
+                  </div>
+                  <form onSubmit={handleAddMobile}>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-1">মোবাইল নম্বর</label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span className="text-gray-500">+88</span>
+                          </div>
+                          <input
+                            type="text"
+                            className="w-full pl-12 p-2 border border-gray-600 rounded bg-gray-800 text-white text-sm"
+                            value={mobileNumber}
+                            onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, ''))}
+                            placeholder="01688XXXXXXXX"
+                            maxLength={11}
+                            required
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-1">লেনদেন পাসওয়ার্ড</label>
+                        <div className="relative">
+                          <input
+                            type={showTransactionPassword ? "text" : "password"}
+                            className="w-full p-2 border border-gray-600 rounded bg-gray-800 text-white text-sm"
+                            value={mobileTransactionPassword}
+                            onChange={(e) => setMobileTransactionPassword(e.target.value)}
+                            required
+                            minLength={6}
+                            placeholder="6+ characters"
+                          />
+                          <button
+                            type="button"
+                            className="absolute right-2 top-2 text-gray-500 hover:text-gray-300"
+                            onClick={() => setShowTransactionPassword(!showTransactionPassword)}
+                          >
+                            {showTransactionPassword ? <FaEyeSlash /> : <FaEye />}
+                          </button>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-1">পাসওয়ার্ড নিশ্চিত করুন</label>
+                        <div className="relative">
+                          <input
+                            type={showTransactionPassword ? "text" : "password"}
+                            className="w-full p-2 border border-gray-600 rounded bg-gray-800 text-white text-sm"
+                            value={confirmMobileTransactionPassword}
+                            onChange={(e) => setConfirmMobileTransactionPassword(e.target.value)}
+                            required
+                            minLength={6}
+                            placeholder="Confirm password"
+                          />
+                          <button
+                            type="button"
+                            className="absolute right-2 top-2 text-gray-500 hover:text-gray-300"
+                            onClick={() => setShowTransactionPassword(!showTransactionPassword)}
+                          >
+                            {showTransactionPassword ? <FaEyeSlash /> : <FaEye />}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex justify-end">
+                      <button
+                        type="submit"
+                        className="bg-cyan-500 hover:bg-cyan-600 text-gray-900 px-4 py-2 rounded text-sm font-medium flex items-center gap-2"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        মোবাইল নম্বর সংরক্ষণ করুন
+                      </button>
+                    </div>
+                  </form>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {selectedTab === 'পাসওয়ার্ড আপডেট' && (
+          <div>
+            <h3 className="text-lg font-semibold mb-4 text-cyan-400">পাসওয়ার্ড আপডেট করুন</h3>
+            
+            {/* Login Password Change */}
+            <div className="bg-gray-700 bg-opacity-50 p-4 rounded-lg shadow mb-6 border border-gray-600">
+              <h4 className="font-medium mb-4 text-cyan-400 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                লগইন পাসওয়ার্ড পরিবর্তন করুন
+              </h4>
+              {feedback.field === 'loginPassword' && (
+                <div className={`mb-3 p-3 rounded text-sm ${
+                  feedback.type === 'success' ? 'bg-green-900 text-green-100' : 'bg-red-900 text-red-100'
+                }`}>
+                  {feedback.message}
+                </div>
+              )}
+              <form onSubmit={handleLoginPasswordChange}>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">বর্তমান পাসওয়ার্ড</label>
+                    <div className="relative">
+                      <input
+                        type={showLoginPassword ? "text" : "password"}
+                        className="w-full p-2 border border-gray-600 rounded bg-gray-800 text-white text-sm"
+                        value={currentLoginPassword}
+                        onChange={(e) => setCurrentLoginPassword(e.target.value)}
+                        required
+                        placeholder="Current password"
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-2 top-2 text-gray-500 hover:text-gray-300"
+                        onClick={() => setShowLoginPassword(!showLoginPassword)}
+                      >
+                        {showLoginPassword ? <FaEyeSlash /> : <FaEye />}
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">নতুন পাসওয়ার্ড</label>
+                    <div className="relative">
+                      <input
+                        type={showLoginPassword ? "text" : "password"}
+                        className="w-full p-2 border border-gray-600 rounded bg-gray-800 text-white text-sm"
+                        value={newLoginPassword}
+                        onChange={(e) => setNewLoginPassword(e.target.value)}
+                        required
+                        minLength={6}
+                        placeholder="6+ characters"
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-2 top-2 text-gray-500 hover:text-gray-300"
+                        onClick={() => setShowLoginPassword(!showLoginPassword)}
+                      >
+                        {showLoginPassword ? <FaEyeSlash /> : <FaEye />}
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">পাসওয়ার্ড নিশ্চিত করুন</label>
+                    <div className="relative">
+                      <input
+                        type={showLoginPassword ? "text" : "password"}
+                        className="w-full p-2 border border-gray-600 rounded bg-gray-800 text-white text-sm"
+                        value={confirmLoginPassword}
+                        onChange={(e) => setConfirmLoginPassword(e.target.value)}
+                        required
+                        minLength={6}
+                        placeholder="Confirm password"
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-2 top-2 text-gray-500 hover:text-gray-300"
+                        onClick={() => setShowLoginPassword(!showLoginPassword)}
+                      >
+                        {showLoginPassword ? <FaEyeSlash /> : <FaEye />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    className="bg-cyan-500 hover:bg-cyan-600 text-gray-900 px-4 py-2 rounded text-sm font-medium flex items-center gap-2"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    পাসওয়ার্ড পরিবর্তন করুন
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Transaction Password Change */}
+            {userData?.phone && (
+              <div className="bg-gray-700 bg-opacity-50 p-4 rounded-lg shadow border border-gray-600">
+                <h4 className="font-medium mb-4 text-cyan-400 flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4" />
+                  </svg>
+                  লেনদেন পাসওয়ার্ড পরিবর্তন করুন
+                </h4>
+                {feedback.field === 'transactionPassword' && (
+                  <div className={`mb-3 p-3 rounded text-sm ${
                     feedback.type === 'success' ? 'bg-green-900 text-green-100' : 'bg-red-900 text-red-100'
                   }`}>
                     {feedback.message}
                   </div>
                 )}
-                <p className="text-sm text-yellow-500 mb-4">লেনদেনের জন্য আপনাকে আপনার মোবাইল নম্বর যোগ করতে হবে</p>
-                <form onSubmit={handleAddMobile}>
+                <form onSubmit={handleTransactionPasswordChange}>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div>
-                      <label className="block text-sm text-gray-400 mb-1">মোবাইল নম্বর</label>
-                      <input
-                        type="text"
-                        className="w-full p-2 border border-gray-600 rounded bg-gray-800 text-white text-sm"
-                        value={mobileNumber}
-                        onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, ''))}
-                        placeholder="01688XXXXXXXX"
-                        maxLength={15}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm text-gray-400 mb-1">লেনদেন পাসওয়ার্ড</label>
+                      <label className="block text-sm text-gray-400 mb-1">বর্তমান লেনদেন পাসওয়ার্ড</label>
                       <div className="relative">
                         <input
                           type={showTransactionPassword ? "text" : "password"}
                           className="w-full p-2 border border-gray-600 rounded bg-gray-800 text-white text-sm"
-                          value={mobileTransactionPassword}
-                          onChange={(e) => setMobileTransactionPassword(e.target.value)}
+                          value={currentTransactionPassword}
+                          onChange={(e) => setCurrentTransactionPassword(e.target.value)}
+                          required
+                          placeholder="Current password"
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-2 top-2 text-gray-500 hover:text-gray-300"
+                          onClick={() => setShowTransactionPassword(!showTransactionPassword)}
+                        >
+                          {showTransactionPassword ? <FaEyeSlash /> : <FaEye />}
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-400 mb-1">নতুন লেনদেন পাসওয়ার্ড</label>
+                      <div className="relative">
+                        <input
+                          type={showTransactionPassword ? "text" : "password"}
+                          className="w-full p-2 border border-gray-600 rounded bg-gray-800 text-white text-sm"
+                          value={newTransactionPassword}
+                          onChange={(e) => setNewTransactionPassword(e.target.value)}
                           required
                           minLength={6}
+                          placeholder="6+ characters"
                         />
                         <button
                           type="button"
@@ -1637,10 +2027,11 @@ const AccountTabContent = () => {
                         <input
                           type={showTransactionPassword ? "text" : "password"}
                           className="w-full p-2 border border-gray-600 rounded bg-gray-800 text-white text-sm"
-                          value={confirmMobileTransactionPassword}
-                          onChange={(e) => setConfirmMobileTransactionPassword(e.target.value)}
+                          value={confirmTransactionPassword}
+                          onChange={(e) => setConfirmTransactionPassword(e.target.value)}
                           required
                           minLength={6}
+                          placeholder="Confirm password"
                         />
                         <button
                           type="button"
@@ -1652,479 +2043,113 @@ const AccountTabContent = () => {
                       </div>
                     </div>
                   </div>
-                  <button
-                    type="submit"
-                    className="bg-cyan-500 hover:bg-cyan-600 text-gray-900 px-4 py-2 rounded text-sm"
-                  >
-                    মোবাইল নম্বর যোগ করুন
-                  </button>
+                  <div className="flex justify-end">
+                    <button
+                      type="submit"
+                      className="bg-cyan-500 hover:bg-cyan-600 text-gray-900 px-4 py-2 rounded text-sm font-medium flex items-center gap-2"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      লেনদেন পাসওয়ার্ড পরিবর্তন করুন
+                    </button>
+                  </div>
                 </form>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-
-      {selectedTab === 'পাসওয়ার্ড আপডেট' && (
-        <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-          <h3 className="text-lg font-semibold mb-4">পাসওয়ার্ড আপডেট করুন</h3>
-          
-          {/* Login Password Change */}
-          <div className="bg-gray-700 p-4 rounded shadow mb-6 border border-gray-600">
-            <h4 className="font-medium mb-4 text-cyan-400">লগইন পাসওয়ার্ড পরিবর্তন করুন</h4>
-            {feedback.field === 'loginPassword' && (
-              <div className={`mb-3 p-2 rounded text-sm ${
-                feedback.type === 'success' ? 'bg-green-900 text-green-100' : 'bg-red-900 text-red-100'
-              }`}>
-                {feedback.message}
               </div>
             )}
-            <form onSubmit={handleLoginPasswordChange}>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div>
-                  <label className="block text-sm text-gray-400 mb-1">বর্তমান পাসওয়ার্ড</label>
-                  <div className="relative">
-                    <input
-                      type={showLoginPassword ? "text" : "password"}
-                      className="w-full p-2 border border-gray-600 rounded bg-gray-800 text-white text-sm"
-                      value={currentLoginPassword}
-                      onChange={(e) => setCurrentLoginPassword(e.target.value)}
-                      required
-                    />
-                    <button
-                      type="button"
-                      className="absolute right-2 top-2 text-gray-500 hover:text-gray-300"
-                      onClick={() => setShowLoginPassword(!showLoginPassword)}
-                    >
-                      {showLoginPassword ? <FaEyeSlash /> : <FaEye />}
-                    </button>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-1">নতুন পাসওয়ার্ড</label>
-                  <div className="relative">
-                    <input
-                      type={showLoginPassword ? "text" : "password"}
-                      className="w-full p-2 border border-gray-600 rounded bg-gray-800 text-white text-sm"
-                      value={newLoginPassword}
-                      onChange={(e) => setNewLoginPassword(e.target.value)}
-                      required
-                      minLength={6}
-                    />
-                    <button
-                      type="button"
-                      className="absolute right-2 top-2 text-gray-500 hover:text-gray-300"
-                      onClick={() => setShowLoginPassword(!showLoginPassword)}
-                    >
-                      {showLoginPassword ? <FaEyeSlash /> : <FaEye />}
-                    </button>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-1">পাসওয়ার্ড নিশ্চিত করুন</label>
-                  <div className="relative">
-                    <input
-                      type={showLoginPassword ? "text" : "password"}
-                      className="w-full p-2 border border-gray-600 rounded bg-gray-800 text-white text-sm"
-                      value={confirmLoginPassword}
-                      onChange={(e) => setConfirmLoginPassword(e.target.value)}
-                      required
-                      minLength={6}
-                    />
-                    <button
-                      type="button"
-                      className="absolute right-2 top-2 text-gray-500 hover:text-gray-300"
-                      onClick={() => setShowLoginPassword(!showLoginPassword)}
-                    >
-                      {showLoginPassword ? <FaEyeSlash /> : <FaEye />}
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <button
-                type="submit"
-                className="bg-cyan-500 hover:bg-cyan-600 text-gray-900 px-4 py-2 rounded text-sm"
-              >
-                পাসওয়ার্ড পরিবর্তন করুন
-              </button>
-            </form>
           </div>
-
-          {/* Transaction Password Change */}
-          {userData?.phone && (
-            <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
-              <h4 className="font-medium mb-4 text-cyan-400">লেনদেন পাসওয়ার্ড পরিবর্তন করুন</h4>
-              {feedback.field === 'transactionPassword' && (
-                <div className={`mb-3 p-2 rounded text-sm ${
-                  feedback.type === 'success' ? 'bg-green-900 text-green-100' : 'bg-red-900 text-red-100'
-                }`}>
-                  {feedback.message}
-                </div>
-              )}
-              <form onSubmit={handleTransactionPasswordChange}>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-1">বর্তমান লেনদেন পাসওয়ার্ড</label>
-                    <div className="relative">
-                      <input
-                        type={showTransactionPassword ? "text" : "password"}
-                        className="w-full p-2 border border-gray-600 rounded bg-gray-800 text-white text-sm"
-                        value={currentTransactionPassword}
-                        onChange={(e) => setCurrentTransactionPassword(e.target.value)}
-                        required
-                      />
-                      <button
-                        type="button"
-                        className="absolute right-2 top-2 text-gray-500 hover:text-gray-300"
-                        onClick={() => setShowTransactionPassword(!showTransactionPassword)}
-                      >
-                        {showTransactionPassword ? <FaEyeSlash /> : <FaEye />}
-                      </button>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-1">নতুন লেনদেন পাসওয়ার্ড</label>
-                    <div className="relative">
-                      <input
-                        type={showTransactionPassword ? "text" : "password"}
-                        className="w-full p-2 border border-gray-600 rounded bg-gray-800 text-white text-sm"
-                        value={newTransactionPassword}
-                        onChange={(e) => setNewTransactionPassword(e.target.value)}
-                        required
-                        minLength={6}
-                      />
-                      <button
-                        type="button"
-                        className="absolute right-2 top-2 text-gray-500 hover:text-gray-300"
-                        onClick={() => setShowTransactionPassword(!showTransactionPassword)}
-                      >
-                        {showTransactionPassword ? <FaEyeSlash /> : <FaEye />}
-                      </button>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-1">পাসওয়ার্ড নিশ্চিত করুন</label>
-                    <div className="relative">
-                      <input
-                        type={showTransactionPassword ? "text" : "password"}
-                        className="w-full p-2 border border-gray-600 rounded bg-gray-800 text-white text-sm"
-                        value={confirmTransactionPassword}
-                        onChange={(e) => setConfirmTransactionPassword(e.target.value)}
-                        required
-                        minLength={6}
-                      />
-                      <button
-                        type="button"
-                        className="absolute right-2 top-2 text-gray-500 hover:text-gray-300"
-                        onClick={() => setShowTransactionPassword(!showTransactionPassword)}
-                      >
-                        {showTransactionPassword ? <FaEyeSlash /> : <FaEye />}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                <button
-                  type="submit"
-                  className="bg-cyan-500 hover:bg-cyan-600 text-gray-900 px-4 py-2 rounded text-sm"
-                >
-                  লেনদেন পাসওয়ার্ড পরিবর্তন করুন
-                </button>
-              </form>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Other tabs remain the same as before */}
-      {selectedTab === 'সারাংশ' && (
-        <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-          <h3 className="text-lg font-semibold mb-4">অ্যাকাউন্ট সারাংশ</h3>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
-              <p className="text-sm text-gray-400">মোট ব্যালেন্স</p>
-              <p className="text-xl font-bold text-cyan-400">৳ {userData?.balance?.toLocaleString('bn-BD') || '০.০০'}</p>
-            </div>
-            <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
-              <p className="text-sm text-gray-400">বোনাস</p>
-              <p className="text-xl font-bold text-cyan-400">৳ {userData?.bonus?.toLocaleString('bn-BD') || '০.০০'}</p>
-            </div>
-            <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
-              <p className="text-sm text-gray-400">লকড</p>
-              <p className="text-xl font-bold text-cyan-400">৳ 0.00</p>
-            </div>
-          </div>
-          <div className="mt-4">
-            <h4 className="font-medium mb-2">সাম্প্রতিক লেনদেন</h4>
-            <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
-              {betHistory.length > 0 ? (
-                <ul>
-                  {betHistory.slice(0, 5).map((bet, index) => (
-                    <li key={index} className="py-2 border-b border-gray-600 last:border-b-0">
-                      <div className="flex justify-between">
-                        <span>{bet.game}</span>
-                        <span className={`font-medium ${
-                          bet.result === 'win' ? 'text-green-400' : 'text-red-400'
-                        }`}>
-                          {bet.result === 'win' ? '+' : '-'}৳{bet.amount}
-                        </span>
-                      </div>
-                      <div className="text-xs text-gray-400 mt-1">
-                        {formatDateToBengali(bet.createdAt)}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-center text-gray-500 py-4">কোন লেনদেন পাওয়া যায়নি</p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {selectedTab === 'পুরস্কার' && (
-        <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-          <h3 className="text-lg font-semibold mb-4">আপনার পুরস্কার</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
-              <p className="text-sm text-gray-400">উপলব্ধ বোনাস</p>
-              <p className="text-xl font-bold text-cyan-400">৳ {userData?.bonus?.toLocaleString('bn-BD') || '০.০০'}</p>
-            </div>
-            <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
-              <p className="text-sm text-gray-400">মোট পুরস্কার</p>
-              <p className="text-xl font-bold text-cyan-400">৳ {userData?.referralEarnings?.toLocaleString('bn-BD') || '০.০০'}</p>
-            </div>
-          </div>
-          <div className="mt-4">
-            <h4 className="font-medium mb-2">পুরস্কার ইতিহাস</h4>
-            <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
-              <p className="text-center text-gray-500 py-4">কোন পুরস্কার ইতিহাস পাওয়া যায়নি</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {selectedTab === 'আয়' && (
-        <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-          <h3 className="text-lg font-semibold mb-4">আয়ের বিবরণ</h3>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
-              <p className="text-sm text-gray-400">আজকের আয়</p>
-              <p className="text-xl font-bold text-cyan-400">৳ 0.00</p>
-            </div>
-            <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
-              <p className="text-sm text-gray-400">গতকালের আয়</p>
-              <p className="text-xl font-bold text-cyan-400">৳ 0.00</p>
-            </div>
-            <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
-              <p className="text-sm text-gray-400">এই মাসের আয়</p>
-              <p className="text-xl font-bold text-cyan-400">৳ 0.00</p>
-            </div>
-          </div>
-          <div className="mt-4">
-            <h4 className="font-medium mb-2">আয়ের ইতিহাস</h4>
-            <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
-              {depositHistory.length > 0 ? (
-                <ul>
-                  {depositHistory.slice(0, 5).map((deposit, index) => (
-                    <li key={index} className="py-2 border-b border-gray-600 last:border-b-0">
-                      <div className="flex justify-between">
-                        <span>{deposit.payment_method}</span>
-                        <span className="text-green-400 font-medium">+৳{deposit.amount}</span>
-                      </div>
-                      <div className="text-xs text-gray-400 mt-1">
-                        {formatDateToBengali(deposit.date)}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-center text-gray-500 py-4">কোন আয়ের ইতিহাস পাওয়া যায়নি</p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {selectedTab === 'রেফার' && (
-        <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-          <h3 className="text-lg font-semibold mb-4">রেফারেল তথ্য</h3>
-          <div className="bg-gray-700 p-4 rounded shadow mb-4 border border-gray-600">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-400">আপনার রেফারেল লিঙ্ক</p>
-                <p className="text-cyan-400">{`${base_url}/ref/${userData?.referralCode}`}</p>
-              </div>
-              <button 
-                onClick={copyReferralLink}
-                className="bg-cyan-500 hover:bg-cyan-600 text-gray-900 px-3 py-1 rounded text-sm flex items-center gap-1"
-              >
-                <FaCopy /> কপি করুন
-              </button>
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-4 mb-4">
-            <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
-              <p className="text-sm text-gray-400">মোট রেফারেল</p>
-              <p className="text-xl font-bold text-cyan-400">{userData?.referralCount || 0}</p>
-            </div>
-            <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
-              <p className="text-sm text-gray-400">সক্রিয় রেফারেল</p>
-              <p className="text-xl font-bold text-cyan-400">{referralHistory.filter(u => u.status === 'active').length || 0}</p>
-            </div>
-            <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
-              <p className="text-sm text-gray-400">রেফারেল বোনাস</p>
-              <p className="text-xl font-bold text-cyan-400">৳ {userData?.referralEarnings?.toLocaleString('bn-BD') || '০.০০'}</p>
-            </div>
-          </div>
-          <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
-            <h4 className="font-medium mb-2">সোশ্যাল মিডিয়ায় শেয়ার করুন</h4>
-            <div className="flex gap-2">
-              <button className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full transition-colors">
-                <FaFacebookF />
-              </button>
-              <button className="bg-blue-400 hover:bg-blue-500 text-white p-2 rounded-full transition-colors">
-                <FaTwitter />
-              </button>
-              <button className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full transition-colors">
-                <FaTelegramPlane />
-              </button>
-              <button className="bg-green-500 hover:bg-green-600 text-white p-2 rounded-full transition-colors">
-                <FaWhatsapp />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {selectedTab === 'আমন্ত্রণ তালিকা' && (
-        <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-          <h3 className="text-lg font-semibold mb-4">আপনার আমন্ত্রিত বন্ধুদের তালিকা</h3>
-          <div className="bg-gray-700 rounded shadow border border-gray-600">
-            <div className="overflow-x-auto">
-              <table className="min-w-full">
-                <thead className="bg-gray-800">
-                  <tr>
-                    <th className="py-2 px-4 text-left text-sm border-b border-gray-600">ব্যবহারকারীর নাম</th>
-                    <th className="py-2 px-4 text-left text-sm border-b border-gray-600">যোগদানের তারিখ</th>
-                    <th className="py-2 px-4 text-left text-sm border-b border-gray-600">স্ট্যাটাস</th>
-                    <th className="py-2 px-4 text-left text-sm border-b border-gray-600">পুরস্কার</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {referralHistory.length > 0 ? (
-                    referralHistory.map((user, index) => (
-                      <tr key={index} className="border-b border-gray-600 last:border-b-0">
-                        <td className="py-2 px-4">{user.username}</td>
-                        <td className="py-2 px-4">{formatDateToBengali(user.createdAt)}</td>
-                        <td className="py-2 px-4">{user.status === 'active' ? 'সক্রিয়' : 'নিষ্ক্রিয়'}</td>
-                        <td className="py-2 px-4">৳ {user.earned?.toLocaleString('bn-BD') || '০.০০'}</td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="4" className="py-4 text-center text-gray-500">
-                        কোন আমন্ত্রিত বন্ধু পাওয়া যায়নি
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
 
 
-
-
-
 const DepositTabContent = () => {
   const [amount, setAmount] = useState('');
-  const [activeProvider, setActiveProvider] = useState('bkash');
   const [selectedMethod, setSelectedMethod] = useState('bkash');
+  const [selectedBonus, setSelectedBonus] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { userData, loading, error, fetchUserData } = useUser();
   const base_url = import.meta.env.VITE_API_KEY_Base_URL;
-  const amounts = [300, 500, 1000, 3000, 5000, 10000, 20000, 25000, 30000];
+  const amounts = [100, 300, 500, 1000, 3000, 5000, 10000, 20000, 25000, 30000];
   
-  // State for error/success messages
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
   // Check if user has mobile number
   const hasMobileNumber = userData?.phone;
 
+  // Calculate account age in days
+  const accountAgeInDays = userData?.createdAt 
+    ? Math.floor((new Date() - new Date(userData.createdAt)) / (1000 * 60 * 60 * 24))
+    : 0;
+
+  // Check if user is eligible for bonuses
+  const isNewUser = accountAgeInDays < 3;
+  const firstDepositBonusAvailable = userData?.bonusInfo?.firstDepositBonusClaimed === false;
+  const depositBonusAvailable = userData?.total_deposit === 0 || 
+    (userData?.bonusInfo?.activeBonuses?.length === 0 && isNewUser);
+
   const handleDeposit = async () => {
     // Reset messages
     setErrorMessage('');
     setSuccessMessage('');
 
-  // Validate inputs
-if (!amount) {
-  setErrorMessage('অনুগ্রহ করে একটি অর্থের পরিমাণ লিখুন');
-  return;
-}
+    // Validate inputs
+    if (!amount) {
+      setErrorMessage('অনুগ্রহ করে একটি অর্থের পরিমাণ লিখুন');
+      return;
+    }
 
-const amountNum = parseFloat(amount);
-if (isNaN(amountNum)) {
-  setErrorMessage('অনুগ্রহ করে একটি বৈধ অর্থের পরিমাণ লিখুন');
-  return;
-}
+    const amountNum = parseFloat(amount);
+    if (isNaN(amountNum)) {
+      setErrorMessage('অনুগ্রহ করে একটি বৈধ অর্থের পরিমাণ লিখুন');
+      return;
+    }
 
-if (amountNum < 300) {
-  setErrorMessage('ন্যূনতম জমার পরিমাণ ৩০০ টাকা');
-  return;
-}
+    if (amountNum < 100) {
+      setErrorMessage('ন্যূনতম জমার পরিমাণ ১০০ টাকা');
+      return;
+    }
 
-if (amountNum > 30000) {
-  setErrorMessage('সর্বোচ্চ জমার পরিমাণ ৩০,০০০ টাকা');
-  return;
-}
+    if (amountNum > 30000) {
+      setErrorMessage('সর্বোচ্চ জমার পরিমাণ ৩০,০০০ টাকা');
+      return;
+    }
 
-if (!userData?.phone) {
-  setErrorMessage('অনুগ্রহ করে প্রথমে আপনার অ্যাকাউন্টে একটি মোবাইল নম্বর যোগ করুন');
-  return;
-}
+    if (!userData?.phone) {
+      setErrorMessage('অনুগ্রহ করে প্রথমে আপনার অ্যাকাউন্টে একটি মোবাইল নম্বর যোগ করুন');
+      return;
+    }
 
-// Text validation - check if amount contains only numbers
-if (!/^\d+$/.test(amount)) {
-  setErrorMessage('অর্থের পরিমাণ শুধুমাত্র সংখ্যা হতে হবে');
-  return;
-}
+    if (!/^\d+$/.test(amount)) {
+      setErrorMessage('অর্থের পরিমাণ শুধুমাত্র সংখ্যা হতে হবে');
+      return;
+    }
+
+    if ((firstDepositBonusAvailable || depositBonusAvailable) && !selectedBonus) {
+      setErrorMessage('অনুগ্রহ করে একটি বোনাস অফার নির্বাচন করুন');
+      return;
+    }
 
     setIsSubmitting(true);
 
     try {
-      const payload = {
-        provider: selectedMethod,
-        amount: amountNum,
-        orderId: `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-        currency: 'BDT',
-        payerId: userData.id || 'N/A',
-        redirectUrl: `${window.location.origin}/deposit-success`,
-        callbackUrl: `${base_url}/api/payment/callback`
-      };
+      // First create pending deposit record
+      const initiateResponse = await axios.post(`${base_url}/user/initiate`, {
+        method: selectedMethod || 'bkash',
+        amount: amountNum || 0,
+        bonusType: selectedBonus || 'none',
+        userid: userData._id
+      });
 
-      const response = await axios.post(
-        'https://api.nagodpay.com/api/payment/payment',
-        payload,
-        {
-          headers: {
-            'x-api-key': import.meta.env.VITE_NAGODPAY_API_KEY,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-
-      if (response.data && response.data.paymentUrl) {
+      if (initiateResponse.data.success && initiateResponse.data.redirectUrl) {
         setSuccessMessage('Payment initiated successfully! Redirecting...');
-        window.location.href = response.data.paymentUrl;
+        // Redirect to payment gateway
+        window.location.href = initiateResponse.data.redirectUrl;
       } else {
-        setErrorMessage(response.data.message);
+        setErrorMessage(initiateResponse.data.message || 'Failed to initiate payment');
       }
     } catch (error) {
       console.error('Deposit error:', error);
@@ -2134,8 +2159,38 @@ if (!/^\d+$/.test(amount)) {
     }
   };
 
+  // Handle payment callback when returning from payment gateway
+  useEffect(() => {
+    const checkPaymentStatus = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const paymentId = urlParams.get('paymentId');
+      const status = urlParams.get('status');
+
+      if (paymentId && status) {
+        try {
+          const response = await axios.get(`/api/deposit/status?paymentId=${paymentId}`);
+          if (response.data.success) {
+            setSuccessMessage('Deposit completed successfully!');
+            fetchUserData(); // Refresh user data
+          } else {
+            setErrorMessage('Deposit failed or is still processing');
+          }
+        } catch (error) {
+          console.error('Error checking payment status:', error);
+          setErrorMessage('Error verifying payment status');
+        }
+      }
+    };
+
+    checkPaymentStatus();
+  }, []);
+
   if (loading) {
-    return <div className="text-center py-4">Loading...</div>;
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500"></div>
+      </div>
+    );
   }
 
   if (error) {
@@ -2151,10 +2206,7 @@ if (!/^\d+$/.test(amount)) {
         </div>
         <button 
           className="bg-cyan-500 hover:bg-cyan-600 text-gray-900 py-2 px-6 rounded text-lg"
-          onClick={() => {
-            // Redirect to profile page
-            window.location.href = '/profile';
-          }}
+          onClick={() => window.location.href = '/profile'}
         >
           অ্যাকাউন্ট এডিট করুন
         </button>
@@ -2163,174 +2215,268 @@ if (!/^\d+$/.test(amount)) {
   }
 
   return (
-    <div className="flex flex-col md:flex-row gap-4 bg-gray-800 p-4 rounded-lg border border-gray-700 max-w-6xl mx-auto">
-      {/* LEFT SIDE: Payment Method Tabs */}
-      <div className="w-full md:w-1/4 bg-gray-700 border border-gray-600 rounded p-3 space-y-3">
-        <div
-          className={`flex items-center p-2 rounded cursor-pointer border ${
-            activeProvider === 'bkash' ? 'bg-cyan-500 border-cyan-500 text-gray-900' : 'bg-gray-800 border-gray-600'
-          }`}
-          onClick={() => {
-            setActiveProvider('bkash');
-            setSelectedMethod('bkash');
-          }}
-        >
-          <img
-            src="https://images.5949390294.com/mcs-images/bank_type/BKASH/BN_2_20240312225413337.png"
-            alt="bkash"
-            className="w-8 h-8 mr-2"
-          />
-          <span className="font-medium">Bkash VIP</span>
+    <div className="bg-gray-800 p-4 rounded-lg border border-gray-700 max-w-4xl mx-auto">
+      {/* Bonus Information */}
+      {isNewUser && (
+        <div className="bg-gradient-to-r from-purple-800 to-blue-800 border border-cyan-400 p-3 rounded mb-4">
+          <h3 className="font-bold text-lg text-white mb-2">🎉 বিশেষ বোনাস অফার! 🎉</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="bg-blue-900/50 p-3 rounded border border-blue-400">
+              <h4 className="font-medium text-cyan-300">প্রথম ডিপোজিট বোনাস</h4>
+              <p className="text-white">৩% অতিরিক্ত বোনাস পাবেন আপনার প্রথম ডিপোজিটে</p>
+              <p className="text-xs text-gray-300 mt-1">*শর্ত প্রযোজ্য</p>
+            </div>
+            <div className="bg-purple-900/50 p-3 rounded border border-purple-400">
+              <h4 className="font-medium text-purple-300">বিশেষ ১৫০% বোনাস</h4>
+              <p className="text-white">১৫০% বোনাস পাবেন ৩০x ওয়েজার সহ</p>
+              <p className="text-xs text-gray-300 mt-1">*শুধুমাত্র নতুন ইউজারদের জন্য</p>
+            </div>
+          </div>
         </div>
+      )}
 
-        <div
-          className={`flex items-center p-2 rounded cursor-pointer border ${
-            activeProvider === 'nagad' ? 'bg-cyan-500 border-cyan-500 text-gray-900' : 'bg-gray-800 border-gray-600'
-          }`}
-          onClick={() => {
-            setActiveProvider('nagad');
-            setSelectedMethod('nagad');
-          }}
-        >
-          <img
-            src="https://images.5949390294.com/mcs-images/bank_type/NAGAD/BN_2_20240312230148421.png"
-            alt="nagad"
-            className="w-8 h-8 mr-2"
-          />
-          <span className="font-medium">Nagad VIP</span>
+      {/* Account Age Notice */}
+      {isNewUser && (
+        <div className="bg-yellow-900/30 border border-yellow-700 text-yellow-400 p-3 rounded mb-4 text-sm">
+          ⚠️ আপনার অ্যাকাউন্ট {accountAgeInDays} দিন পুরোনো। নতুন অ্যাকাউন্টের জন্য বিশেষ বোনাস অফার উপলব্ধ!
+        </div>
+      )}
+
+      {/* Error/Success Messages */}
+      {errorMessage && (
+        <div className="bg-red-500/20 border border-red-500 text-red-500 p-3 rounded mb-4">
+          {errorMessage}
+        </div>
+      )}
+      {successMessage && (
+        <div className="bg-green-500/20 border border-green-500 text-green-500 p-3 rounded mb-4">
+          {successMessage}
+        </div>
+      )}
+
+      {/* Payment Method Selection */}
+      <div className="mb-4">
+        <label className="block font-medium mb-2">পেমেন্ট মেথড:</label>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setSelectedMethod('bkash')}
+            className={`px-4 py-2 rounded border cursor-pointer ${
+              selectedMethod === 'bkash' ? 'bg-cyan-500 border-cyan-500 text-gray-900' : 'bg-gray-700 border-gray-600'
+            }`}
+          >
+            <div className="flex items-center">
+              <img
+                src="https://images.5949390294.com/mcs-images/bank_type/BKASH/BN_2_20240312225413337.png"
+                alt="bkash"
+                className="w-6 h-6 mr-2"
+              />
+              Bkash
+            </div>
+          </button>
+          <button
+            onClick={() => setSelectedMethod('nagad')}
+            className={`px-4 py-2 cursor-pointer rounded border ${
+              selectedMethod === 'nagad' ? 'bg-cyan-500 border-cyan-500 text-gray-900' : 'bg-gray-700 border-gray-600'
+            }`}
+          >
+            <div className="flex items-center">
+              <img
+                src="https://images.5949390294.com/mcs-images/bank_type/NAGAD/BN_2_20240312230148421.png"
+                alt="nagad"
+                className="w-6 h-6 mr-2"
+              />
+              Nagad
+            </div>
+          </button>
         </div>
       </div>
 
-      {/* RIGHT SIDE: Deposit Form */}
-      <div className="w-full md:w-3/4">
-        {/* Top Warning */}
-        <div className="bg-gray-700 border border-cyan-500 text-cyan-400 p-3 rounded mb-4 text-sm">
-          ❗❗ NOTE : অনুগ্রহ করে আপনার ডিপোজিট করার পরে অবশ্যই আপনার Trx-ID আইডি সাবমিট করবেন। <br />
-          তাহলে খুব দ্রুত আপনার একাউন্টের মধ্যে টাকা যোগ হয়ে যাবে। ⚠️⚠️⚠️
+      {/* Deposit Amount Section */}
+      <div className="mb-4">
+        <label className="block font-medium mb-2">জমার পরিমাণ:</label>
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 mb-2">
+          {amounts.map((amt) => (
+            <button
+              key={amt}
+              onClick={() => {
+                setAmount(amt.toString());
+                setErrorMessage('');
+              }}
+              className={`bg-gray-700 cursor-pointer hover:bg-cyan-500 hover:text-gray-900 px-2 py-1 rounded text-sm text-center border ${
+                amount === amt.toString() ? 'border-cyan-500' : 'border-gray-600'
+              }`}
+            >
+              {amt.toLocaleString()} ৳
+            </button>
+          ))}
         </div>
+        <input
+          type="text"
+          value={amount}
+          onChange={(e) => {
+            const value = e.target.value;
+            if (value === '' || /^\d+$/.test(value)) {
+              setAmount(value);
+              setErrorMessage('');
+            }
+          }}
+          className="mt-3 w-full p-2 border border-gray-600 rounded text-sm bg-gray-800 text-white"
+          placeholder="জমার পরিমাণ লিখুন"
+          min="100"
+          max="30000"
+        />
+        <p className="text-sm text-gray-400 mt-1">
+          সর্বনিম্ন পরিমাণ: ৳ 100, সর্বাধিক পরিমাণ: ৳ 30,000 <br />
+          জমার সময়: 24/24
+        </p>
+      </div>
 
-        {/* Error/Success Messages */}
-        {errorMessage && (
-          <div className="bg-red-500/20 border border-red-500 text-red-500 p-3 rounded mb-4">
-            {errorMessage}
-          </div>
-        )}
-        {successMessage && (
-          <div className="bg-green-500/20 border border-green-500 text-green-500 p-3 rounded mb-4">
-            {successMessage}
-          </div>
-        )}
-
-        {/* Sub-tabs (Only if Bkash Selected) */}
-        {/* {activeProvider === 'bkash' && (
-          <div className="flex flex-wrap gap-2 mb-4">
-            {['ALO', 'SOO', 'G1P', 'LCK', 'SKP'].map((label) => (
-              <div
-                key={label}
-                className={`px-3 py-1 border rounded cursor-pointer ${
-                  label === 'ALO' ? 'bg-cyan-500 border-cyan-500 text-gray-900' : 'bg-gray-800 border-gray-600'
-                }`}
+      {/* Bonus Selection */}
+      {(firstDepositBonusAvailable || depositBonusAvailable) && (
+        <div className="mb-4">
+          <label className="block font-medium mb-2">বোনাস অফার নির্বাচন করুন:</label>
+          <div className="space-y-2">
+            {firstDepositBonusAvailable && (
+              <div 
+                className={`p-3 border rounded cursor-pointer ${selectedBonus === 'first-deposit' ? 'border-cyan-500 bg-cyan-500/10' : 'border-gray-600 bg-gray-800'}`}
+                onClick={() => setSelectedBonus('first-deposit')}
               >
-                Bkash VIP | {label}
+                <div className="flex items-center">
+                  <input 
+                    type="radio" 
+                    checked={selectedBonus === 'first-deposit'}
+                    onChange={() => setSelectedBonus('first-deposit')}
+                    className="mr-2"
+                  />
+                  <div>
+                    <h4 className="font-medium">প্রথম ডিপোজিট বোনাস (৩%)</h4>
+                    <p className="text-sm text-gray-400">আপনার প্রথম ডিপোজিটে ৩% অতিরিক্ত বোনাস পাবেন</p>
+                  </div>
+                </div>
               </div>
-            ))}
-          </div>
-        )} */}
-
-        {/* Black Warning */}
-        {/* <div className="bg-gray-800 border border-cyan-500 text-cyan-400 p-3 rounded text-sm mb-4">
-          ⚠️ অনুগ্রহ করে সতর্ক থাকুন (যে সমস্ত ডিপোজিট পদ্ধতির প্রদানের জন্য Telegram বা Facebook এর মাধ্যমে দাবি করছে
-          তারা অনেক ফ্যাকার এসেছে। আমাদের অফিসিয়াল ডিপোজিটগুলো শুধুমাত্র প্ল্যাটফর্মের মধ্যে সম্পন্ন হয়।)
-        </div> */}
-
-        {/* Deposit Amount Buttons */}
-        <div className="mb-4">
-          <label className="block font-medium mb-2">জমার পরিমাণ:</label>
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 mb-2">
-            {amounts.map((amt) => (
-              <button
-                key={amt}
-                onClick={() => {
-                  setAmount(amt.toString());
-                  setErrorMessage(''); // Clear error when selecting an amount
-                }}
-                className={`bg-gray-700 hover:bg-cyan-500 hover:text-gray-900 px-2 py-1 rounded text-sm text-center border ${
-                  amount === amt.toString() ? 'border-cyan-500' : 'border-gray-600'
-                }`}
+            )}
+            
+            {depositBonusAvailable && (
+              <div 
+                className={`p-3 border rounded cursor-pointer ${selectedBonus === 'special-bonus' ? 'border-cyan-500 bg-cyan-500/10' : 'border-gray-600 bg-gray-800'}`}
+                onClick={() => setSelectedBonus('special-bonus')}
               >
-                {amt.toLocaleString()} ৳
-              </button>
-            ))}
+                <div className="flex items-center">
+                  <input 
+                    type="radio" 
+                    checked={selectedBonus === 'special-bonus'}
+                    onChange={() => setSelectedBonus('special-bonus')}
+                    className="mr-2"
+                  />
+                  <div>
+                    <h4 className="font-medium">বিশেষ ১৫০% বোনাস</h4>
+                    <p className="text-sm text-gray-400">১৫০% বোনাস পাবেন ৩০x ওয়েজার সহ (শুধুমাত্র নতুন ইউজারদের জন্য)</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div 
+              className={`p-3 border rounded cursor-pointer ${selectedBonus === 'no-bonus' ? 'border-cyan-500 bg-cyan-500/10' : 'border-gray-600 bg-gray-800'}`}
+              onClick={() => setSelectedBonus('no-bonus')}
+            >
+              <div className="flex items-center">
+                <input 
+                  type="radio" 
+                  checked={selectedBonus === 'no-bonus'}
+                  onChange={() => setSelectedBonus('no-bonus')}
+                  className="mr-2"
+                />
+                <div>
+                  <h4 className="font-medium">কোন বোনাস নিবেন না</h4>
+                  <p className="text-sm text-gray-400">আমি কোন বোনাস অফার নিতে চাই না</p>
+                </div>
+              </div>
+            </div>
           </div>
-          <input
-            type="text"
-            value={amount}
-            onChange={(e) => {
-              const value = e.target.value;
-              // Allow only numbers and empty string
-              if (value === '' || /^\d+$/.test(value)) {
-                setAmount(value);
-                setErrorMessage(''); // Clear error when typing
-              }
-            }}
-            className="mt-3 w-full p-2 border border-gray-600 rounded text-sm bg-gray-800 text-white"
-            placeholder="জমার পরিমাণ লিখুন"
-            min="300"
-            max="30000"
-          />
-          <p className="text-sm text-gray-400 mt-1">
-            সর্বনিম্ন পরিমাণ: ৳ 300, সর্বাধিক পরিমাণ: ৳ 30,000 <br />
-            জমার সময়: 24/24
-          </p>
         </div>
+      )}
 
-        {/* Payment Method Dropdown */}
-        <div className="mb-4">
-          <label className="block font-medium mb-2">প্রদান পদ্ধতি নির্বাচন করুন:</label>
-          <select
-            className="w-full p-2 border border-gray-600 rounded bg-gray-800 text-white"
-            value={selectedMethod}
-            onChange={(e) => setSelectedMethod(e.target.value)}
-          >
-            <option value="bkash">bKash</option>
-            <option value="nagad">Nagad</option>
-          </select>
-        </div>
+      {/* Submit Button with Loading Animation */}
+      <button 
+        className="bg-cyan-500 hover:bg-cyan-600 text-gray-900 py-2 px-4 rounded w-full text-lg flex justify-center items-center"
+        onClick={handleDeposit}
+        disabled={isSubmitting}
+      >
+        {isSubmitting ? (
+          <>
+            <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-gray-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            প্রসেসিং...
+          </>
+        ) : 'জমার জন্য আবেদন করুন'}
+      </button>
 
-        {/* Submit Button */}
-        <button 
-          className="bg-cyan-500 hover:bg-cyan-600 text-gray-900 py-2 px-4 rounded w-full text-lg"
-          onClick={handleDeposit}
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? 'Processing...' : 'জমার জন্য আবেদন করুন'}
-        </button>
+      {/* Terms and Conditions */}
+      <div className="mt-4 p-3 bg-gray-800 rounded border border-gray-700 text-xs text-gray-400">
+        <p className="font-medium mb-1 text-cyan-400">শর্তাবলী:</p>
+        <ul className="list-disc pl-4 space-y-1">
+          <li>সর্বনিম্ন ডিপোজিট পরিমাণ ১০০ টাকা</li>
+          <li>যেকোনো অস্বাভাবিক লেনদেনের ক্ষেত্রে অ্যাকাউন্ট ব্লক করা হতে পারে</li>
+          <li>বোনাসের শর্তাবলী প্রযোজ্য</li>
+          <li>ডিপোজিট সম্পন্ন করতে ১-৫ মিনিট সময় লাগতে পারে</li>
+        </ul>
+      </div>
 
-        {/* Deposit History */}
-        <div className="bg-gray-700 p-4 mt-6 rounded border border-gray-600">
-          <h4 className="font-medium mb-3">ডিপোজিট ইতিহাস</h4>
-          <table className="w-full text-sm border border-gray-600">
-            <thead className="bg-gray-800">
-              <tr>
-                <th className="py-2 px-4 text-left border-b border-gray-600">তারিখ</th>
-                <th className="py-2 px-4 text-left border-b border-gray-600">পরিমাণ</th>
-                <th className="py-2 px-4 text-left border-b border-gray-600">পদ্ধতি</th>
-                <th className="py-2 px-4 text-left border-b border-gray-600">স্ট্যাটাস</th>
-              </tr>
-            </thead>
-            <tbody>
+      {/* Deposit History */}
+      <div className="bg-gray-700 p-4 mt-6 rounded border border-gray-600">
+        <h4 className="font-medium mb-3">ডিপোজিট ইতিহাস</h4>
+        <table className="w-full text-sm border border-gray-600">
+          <thead className="bg-gray-800">
+            <tr>
+              <th className="py-2 px-4 text-left border-b border-gray-600">তারিখ</th>
+              <th className="py-2 px-4 text-left border-b border-gray-600">পরিমাণ</th>
+              <th className="py-2 px-4 text-left border-b border-gray-600">পদ্ধতি</th>
+              <th className="py-2 px-4 text-left border-b border-gray-600">স্ট্যাটাস</th>
+            </tr>
+          </thead>
+          <tbody>
+            {userData?.depositHistory?.length > 0 ? (
+              [...userData.depositHistory]
+                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                .map((deposit, index) => (
+                  <tr key={index}>
+                    <td className="py-2 px-4 border-b border-gray-600">
+                      {new Date(deposit.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="py-2 px-4 border-b border-gray-600">
+                      {deposit.amount.toLocaleString()} ৳
+                    </td>
+                    <td className="py-2 px-4 border-b border-gray-600">
+                      {deposit.method}
+                    </td>
+                    <td className="py-2 px-4 border-b border-gray-600">
+                      <span className={`px-2 py-1 rounded text-xs ${
+                        deposit.status === 'completed' ? 'bg-green-500/20 text-green-500' :
+                        deposit.status === 'pending' ? 'bg-yellow-500/20 text-yellow-500' :
+                        'bg-red-500/20 text-red-500'
+                      }`}>
+                        {deposit.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+            ) : (
               <tr>
                 <td colSpan="4" className="text-center py-4 text-gray-500">
                   কোন ডিপোজিট ইতিহাস পাওয়া যায়নি
                 </td>
               </tr>
-            </tbody>
-          </table>
-        </div>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
 };
+
 
 
 const WithdrawalTabContent = () => {
@@ -2340,19 +2486,53 @@ const WithdrawalTabContent = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [cancelBonus, setCancelBonus] = useState(false);
   const { userData, loading: userLoading, error: userError, fetchUserData } = useUser();
   const base_url = import.meta.env.VITE_API_KEY_Base_URL;
 
   // Check if user has mobile number
   const hasMobileNumber = userData?.phone;
+  
+  // Calculate available balance after considering wagering requirements
+  const calculateAvailableBalance = () => {
+    let available = userData?.balance || 0;
+    
+    // If user has bonus and hasn't canceled it
+    if (userData?.bonusBalance > 0 && !cancelBonus) {
+      return 0; // Can't withdraw from main balance until bonus is cleared
+    }
+    
+    // Check wagering requirements
+    if (userData?.totalDeposits > 0) {
+      const wageringRequirement = userData.totalDeposits * 3;
+      const wageringCompleted = userData.totalWagered || 0;
+      
+      if (wageringCompleted < wageringRequirement) {
+        // If they want to withdraw without completing, apply 20% commission
+        return available * 0.8; // 20% commission
+      }
+    }
+    
+    return available;
+  };
+  
+  const availableBalance = calculateAvailableBalance();
+  const hasActiveBonus = userData?.bonusBalance > 0 && !cancelBonus;
+  const needsWagering = userData?.totalDeposits > 0 && 
+                       (userData.totalWagered || 0) < (userData.totalDeposits * 3);
 
   const handleWithdrawal = async () => {
     setError('');
     setSuccess('');
     
     // Validation
-    if (!amount || amount < 500) {
-      setError('ন্যূনতম উত্তোলন পরিমাণ ৳ ৫০০');
+    if (!amount || amount < 300) {
+      setError('ন্যূনতম উত্তোলন পরিমাণ ৳ ৩০০');
+      return;
+    }
+    
+    if (parseFloat(amount) > availableBalance) {
+      setError(`আপনার পর্যাপ্ত ব্যালেন্স নেই। উত্তোলনযোগ্য ব্যালেন্স: ৳${availableBalance.toFixed(2)}`);
       return;
     }
     
@@ -2384,16 +2564,18 @@ const WithdrawalTabContent = () => {
       const payload = {
         provider: paymentMethod,
         orderId: orderId,
-        payeeId: userData.id, // Assuming userData has an id field
+        payeeId: userData.id,
         payeeAccount: accountNumber,
         callbackUrl: `${window.location.origin}/withdrawal-callback`,
         amount: parseFloat(amount).toFixed(2),
-        currency: "BDT"
+        currency: "BDT",
+        cancelBonus: cancelBonus,
+        commissionApplied: needsWagering && (userData.totalWagered || 0) < (userData.totalDeposits * 3)
       };
 
       const response = await axios.post(`${base_url}/api/payment/payout`, payload, {
         headers: {
-          'x-api-key': import.meta.env.VITE_API_KEY, // Make sure to set this in your .env
+          'x-api-key': import.meta.env.VITE_API_KEY,
           'Content-Type': 'application/json'
         }
       });
@@ -2403,6 +2585,9 @@ const WithdrawalTabContent = () => {
         // Reset form
         setAmount('');
         setAccountNumber('');
+        setCancelBonus(false);
+        // Refresh user data
+        fetchUserData();
       } else {
         setError('উত্তোলন অনুরোধ ব্যর্থ হয়েছে। দয়া করে আবার চেষ্টা করুন।');
       }
@@ -2440,8 +2625,8 @@ const WithdrawalTabContent = () => {
         <button 
           className="bg-cyan-500 hover:bg-cyan-600 text-gray-900 py-2 px-6 rounded text-lg"
           onClick={() => {
-            // Redirect to profile page or open modal to add phone number
-            // Implement your navigation logic here
+            // Redirect to profile page
+            window.location.href = '/profile';
           }}
         >
           অ্যাকাউন্ট এডিট করুন
@@ -2456,8 +2641,63 @@ const WithdrawalTabContent = () => {
       
       {/* Warning Message */}
       <div className="bg-yellow-500/10 border border-yellow-500 text-yellow-400 p-3 rounded mb-4 text-sm">
-        ⚠️ উত্তোলনের ন্যূনতম পরিমাণ: ৳ 500 | উত্তোলনের সময়: সকাল ১০টা থেকে রাত ১০টা পর্যন্ত
+        ⚠️ উত্তোলনের ন্যূনতম পরিমাণ: ৳ 300 | উত্তোলনের সময়: সকাল ১০টা থেকে রাত ১০টা পর্যন্ত
       </div>
+
+      {/* Balance Information */}
+      <div className="bg-gray-700 p-3 rounded mb-4 border border-gray-600">
+        <div className="flex justify-between mb-2">
+          <span className="text-gray-400">মোট ব্যালেন্স:</span>
+          <span className="font-medium">৳{(userData?.balance || 0).toFixed(2)}</span>
+        </div>
+        {userData?.bonusBalance > 0 && (
+          <div className="flex justify-between mb-2">
+            <span className="text-gray-400">বোনাস ব্যালেন্স:</span>
+            <span className="font-medium text-cyan-400">৳{userData.bonusBalance.toFixed(2)}</span>
+          </div>
+        )}
+        <div className="flex justify-between">
+          <span className="text-gray-400">উত্তোলনযোগ্য ব্যালেন্স:</span>
+          <span className={`font-medium ${availableBalance > 0 ? 'text-green-400' : 'text-red-400'}`}>
+            ৳{availableBalance.toFixed(2)}
+          </span>
+        </div>
+      </div>
+
+      {/* Bonus Warning */}
+      {hasActiveBonus && (
+        <div className="bg-red-500/10 border border-red-500 text-red-400 p-3 rounded mb-4 text-sm">
+          ⚠️ আপনার অ্যাকাউন্টে সক্রিয় বোনাস রয়েছে (৳{userData.bonusBalance.toFixed(2)}). 
+          বোনাস থাকা অবস্থায় উত্তোলন করা যাবে না। আপনি চাইলে বোনাস বাতিল করতে পারেন (১৫০% জরিমানা সহ)।
+          <div className="mt-2 flex items-center">
+            <input
+              type="checkbox"
+              id="cancelBonus"
+              checked={cancelBonus}
+              onChange={(e) => setCancelBonus(e.target.checked)}
+              className="mr-2"
+            />
+            <label htmlFor="cancelBonus">বোনাস বাতিল করুন (১৫০% জরিমানা)</label>
+          </div>
+          {cancelBonus && (
+            <div className="mt-2 text-yellow-400">
+              বোনাস বাতিল করলে আপনার ব্যালেন্স থেকে ৳{(userData.bonusBalance * 1.5).toFixed(2)} কেটে নেওয়া হবে।
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Wagering Warning */}
+      {needsWagering && (
+        <div className="bg-purple-500/10 border border-purple-500 text-purple-400 p-3 rounded mb-4 text-sm">
+          ⚠️ আপনার ডিপোজিটের ৩ গুণ ওয়েজার পূরণ হয়নি ({userData.totalWagered || 0}/{(userData.totalDeposits * 3).toFixed(2)}).
+          ওয়েজার পূরণ না করেই উত্তোলন করলে ২০% কমিশন কাটা হবে।
+          <div className="mt-2">
+            বর্তমান উত্তোলনে প্রযোজ্য কমিশন: ৳{(parseFloat(amount || 0) * 0.2).toFixed(2)} 
+            (নিট প্রাপ্তি: ৳{(parseFloat(amount || 0) * 0.8).toFixed(2)})
+          </div>
+        </div>
+      )}
 
       {/* Error/Success Messages */}
       {error && (
@@ -2483,7 +2723,6 @@ const WithdrawalTabContent = () => {
             <option value="bkash">bKash</option>
             <option value="nagad">Nagad</option>
             <option value="rocket">Rocket</option>
-            <option value="bank">ব্যাংক ট্রান্সফার</option>
           </select>
         </div>
         
@@ -2505,9 +2744,6 @@ const WithdrawalTabContent = () => {
           {paymentMethod === 'rocket' && (
             <p className="text-xs text-gray-400 mt-1">Rocket নাম্বার ফরম্যাট: 01XXXXXXXXX</p>
           )}
-          {paymentMethod === 'bank' && (
-            <p className="text-xs text-gray-400 mt-1">ব্যাংক অ্যাকাউন্ট নম্বর দিন</p>
-          )}
         </div>
         
         <div className="mb-4">
@@ -2518,21 +2754,39 @@ const WithdrawalTabContent = () => {
             placeholder="উত্তোলন পরিমাণ লিখুন"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            min="500"
+            min="300"
+            step="100"
           />
-          <p className="text-xs text-gray-400 mt-1">ন্যূনতম উত্তোলন পরিমাণ: ৳ 500</p>
+          <div className="flex justify-between text-xs text-gray-400 mt-1">
+            <span>ন্যূনতম উত্তোলন: ৳300</span>
+            <span>সর্বোচ্চ উত্তোলন: ৳{availableBalance.toFixed(2)}</span>
+          </div>
         </div>
         
         <button 
           className="bg-cyan-500 hover:bg-cyan-600 text-gray-900 px-4 py-2 rounded w-full disabled:bg-gray-600 disabled:cursor-not-allowed"
           onClick={handleWithdrawal}
-          disabled={!amount || amount < 500 || !accountNumber || loading}
+          disabled={!amount || amount < 300 || !accountNumber || loading || 
+                   (hasActiveBonus && !cancelBonus) || 
+                   parseFloat(amount || 0) > availableBalance}
         >
           {loading ? 'প্রসেস হচ্ছে...' : 'অনুরোধ করুন'}
         </button>
       </div>
 
       <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
+        <h4 className="font-medium mb-2">উত্তোলন শর্তাবলী</h4>
+        <ul className="text-sm text-gray-400 list-disc pl-5 space-y-1">
+          <li>ন্যূনতম উত্তোলন পরিমাণ ৳৩০০</li>
+          <li>প্রতিদিন সর্বোচ্চ ৩টি উত্তোলন অনুরোধ করা যাবে</li>
+          <li>বোনাস থাকা অবস্থায় উত্তোলন করা যাবে না</li>
+          <li>ডিপোজিটের ৩ গুণ ওয়েজার পূরণ না করলে ২০% কমিশন প্রযোজ্য</li>
+          <li>বোনাস বাতিল করলে ১৫০% জরিমানা প্রযোজ্য</li>
+          <li>উত্তোলন প্রসেসিং সময় ১০ মিনিট থেকে ২৪ ঘন্টা</li>
+        </ul>
+      </div>
+
+      <div className="bg-gray-700 p-4 rounded shadow border border-gray-600 mt-4">
         <h4 className="font-medium mb-2">উত্তোলন ইতিহাস</h4>
         <div className="overflow-x-auto">
           <table className="min-w-full border border-gray-600">
@@ -2837,79 +3091,216 @@ const RewardCenterTabContent = () => {
   );
 };
 
+import { 
+  FaCoins,
+} from 'react-icons/fa';
+
+
 const InviteFriendTabContent = () => {
   const [activeTab, setActiveTab] = useState('invite');
+  const [copied, setCopied] = useState(false);
+  const [referralData, setReferralData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const { userData, fetchUserData } = useUser();
+const API_BASE_URL = import.meta.env.VITE_API_KEY_Base_URL;
+
+  const referralLink = `${window.location.origin}/?refer_code=${userData?.referralCode || ''}`;
+
+ useEffect(() => {
+    if (userData?._id && (activeTab === 'list' || activeTab === 'reward')) {
+      fetchReferralData();
+    }
+}, [activeTab, userData]);
+
+const fetchReferralData = async () => {
+  try {
+    setLoading(true);
+    setError(null);
+    
+    const response = await axios.get(`${API_BASE_URL}/user/referred-users-details/${userData?._id}`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      // Add this to ensure you get JSON responses
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    });
+
+    console.log('API Response:', response); // Inspect the full response
+    
+    if (typeof response.data === 'string' && response.data.includes('<!doctype html>')) {
+      throw new Error('Received HTML instead of JSON - check API endpoint');
+    }
+    
+    setReferralData(response.data.data);
+  } catch (err) {
+    console.error('API Error:', err);
+    console.error('Error Response:', err.response);
+    setError(err.response?.data?.message || 'Failed to fetch referral data');
+  } finally {
+    setLoading(false);
+  }
+};
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(referralLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const shareOnSocialMedia = (platform) => {
+    let url = '';
+    const text = `Join ${window.location.hostname} with my referral link and get bonus: ${referralLink}`;
+    
+    switch(platform) {
+      case 'facebook':
+        url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(referralLink)}`;
+        break;
+      case 'twitter':
+        url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+        break;
+      case 'telegram':
+        url = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(text)}`;
+        break;
+      case 'whatsapp':
+        url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+        break;
+      default:
+        return;
+    }
+    
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'BDT',
+      minimumFractionDigits: 2
+    }).format(amount || 0).replace('BDT', '৳');
+  };
 
   return (
     <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
       <h3 className="text-lg font-semibold mb-4">বন্ধুর আমন্ত্রণ</h3>
       <div className="bg-gray-700 p-4 rounded shadow mb-4 border border-gray-600">
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
           <button
-            className={`px-3 py-1 rounded text-sm ${activeTab === 'invite' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'}`}
+            className={`px-3 py-1 rounded text-sm cursor-pointer whitespace-nowrap flex items-center gap-1 ${activeTab === 'invite' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'}`}
             onClick={() => setActiveTab('invite')}
           >
-            আমন্ত্রণ
+            <FaUser size={12} /> আমন্ত্রণ
           </button>
           <button
-            className={`px-3 py-1 rounded text-sm ${activeTab === 'list' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'}`}
+            className={`px-3 py-1 rounded text-sm whitespace-nowrap cursor-pointer flex items-center gap-1 ${activeTab === 'list' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'}`}
             onClick={() => setActiveTab('list')}
           >
-            আমন্ত্রিত তালিকা
+            <FaHistory size={12} /> আমন্ত্রিত তালিকা
           </button>
           <button
-            className={`px-3 py-1 rounded text-sm ${activeTab === 'reward' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'}`}
+            className={`px-3 py-1 rounded text-sm whitespace-nowrap cursor-pointer flex items-center gap-1 ${activeTab === 'reward' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'}`}
             onClick={() => setActiveTab('reward')}
           >
-            পুরস্কার
+            <FaCoins size={12} /> পুরস্কার
           </button>
         </div>
-        {activeTab === 'invite' && (
+
+        {loading && (
+          <div className="text-center py-8">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-cyan-500"></div>
+            <p className="mt-2 text-gray-400">লোড হচ্ছে...</p>
+          </div>
+        )}
+
+        {error && (
+          <div className="bg-red-900/50 border border-red-700 text-red-200 p-3 rounded mb-4 text-sm">
+            {error}
+          </div>
+        )}
+
+        {!loading && activeTab === 'invite' && (
           <div>
             <div className="mb-4 p-4 bg-gray-800 rounded-lg border border-gray-600">
               <h4 className="font-medium mb-2">আপনার রেফারেল লিঙ্ক</h4>
               <div className="flex items-center gap-2">
                 <input
                   type="text"
-                  className="flex-1 p-2 border border-gray-600 rounded bg-gray-700 text-white"
-                  value="https://example.com/ref/t4590050297"
+                  className="flex-1 p-2 border border-gray-600 rounded bg-gray-700 text-white text-sm"
+                  value={referralLink}
                   readOnly
                 />
-                <button className="bg-cyan-500 hover:bg-cyan-600 text-gray-900 px-3 py-2 rounded flex items-center gap-1">
-                  <FaCopy /> কপি
+                <button 
+                  className="bg-cyan-500 hover:bg-cyan-600 text-gray-900 px-3 py-2 rounded flex items-center gap-1 text-sm"
+                  onClick={handleCopyLink}
+                >
+                  {copied ? <FaCheck /> : <FaCopy />} 
+                  {copied ? 'কপি হয়েছে!' : 'কপি করুন'}
                 </button>
               </div>
             </div>
+
             <div className="mb-4">
               <h4 className="font-medium mb-2">সোশ্যাল মিডিয়ায় শেয়ার করুন</h4>
               <div className="flex gap-2">
-                <button className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full transition-colors">
+                <button 
+                  className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full transition-colors"
+                  onClick={() => shareOnSocialMedia('facebook')}
+                >
                   <FaFacebookF />
                 </button>
-                <button className="bg-blue-400 hover:bg-blue-500 text-white p-2 rounded-full transition-colors">
+                <button 
+                  className="bg-blue-400 hover:bg-blue-500 text-white p-2 rounded-full transition-colors"
+                  onClick={() => shareOnSocialMedia('twitter')}
+                >
                   <FaTwitter />
                 </button>
-                <button className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full transition-colors">
+                <button 
+                  className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full transition-colors"
+                  onClick={() => shareOnSocialMedia('telegram')}
+                >
                   <FaTelegramPlane />
                 </button>
-                <button className="bg-green-500 hover:bg-green-600 text-white p-2 rounded-full transition-colors">
+                <button 
+                  className="bg-green-500 hover:bg-green-600 text-white p-2 rounded-full transition-colors"
+                  onClick={() => shareOnSocialMedia('whatsapp')}
+                >
                   <FaWhatsapp />
                 </button>
               </div>
             </div>
+
             <div className="p-4 bg-gray-800 rounded-lg border border-gray-600">
               <h4 className="font-medium mb-2">আমন্ত্রণ নিয়ম</h4>
               <ul className="list-disc pl-5 text-sm text-gray-400 space-y-1">
-                <li>প্রতিটি সফল আমন্ত্রণের জন্য আপনি 50 টাকা বোনাস পাবেন</li>
-                <li>আপনার আমন্ত্রিত বন্ধুকে ন্যূনতম 500 টাকা ডিপোজিট করতে হবে</li>
+                <li>আপনার আমন্ত্রিত বন্ধুকে ন্যূনতম 100 টাকা ডিপোজিট করতে হবে</li>
                 <li>আপনার আমন্ত্রিত বন্ধুকে ন্যূনতম 3টি বেট প্লেস করতে হবে</li>
+                <li>আপনি পাবেন তাদের প্রথম ডিপোজিটের 25% বোনাস</li>
+                <li>আপনার বন্ধু পাবেন 50 টাকা সাইনআপ বোনাস</li>
               </ul>
+              
+              <div className="mt-4 p-3 bg-gray-900 rounded border border-cyan-500/30">
+                <h5 className="font-medium text-cyan-400 mb-1">রেফারেল ইনকাম ক্যালকুলেশন</h5>
+                <p className="text-xs text-gray-300">
+                  রেফারেল ইনকাম = (মোট ডিপোজিট − মোট উত্তোলন − বর্তমান ব্যালেন্স) × 25%<br />
+                  <span className="text-gray-400">* এই হিসাবটি প্রতি সপ্তাহে একবার আপডেট করা হয়</span>
+                </p>
+              </div>
             </div>
           </div>
         )}
-        {activeTab === 'list' && (
-          <div className="overflow-x-auto">
-            <table className="min-w-full border border-gray-600">
+
+        {!loading && activeTab === 'list' && (
+          <div className="overflow-x-auto border-[1px] border-gray-600">
+            <table className="min-w-full">
               <thead className="bg-gray-800">
                 <tr>
                   <th className="py-2 px-4 text-left text-sm border-b border-gray-600">ব্যবহারকারীর নাম</th>
@@ -2919,27 +3310,96 @@ const InviteFriendTabContent = () => {
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td colSpan="4" className="py-4 text-center text-gray-500">
-                    কোন আমন্ত্রিত বন্ধু পাওয়া যায়নি
-                  </td>
-                </tr>
+                {referralData?.referredUsers?.length > 0 ? (
+                  referralData.referredUsers.map((user) => (
+                    <tr key={user.id} className="hover:bg-gray-800/50">
+                      <td className="py-3 px-4 border-b border-gray-700">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center">
+                            <FaUser size={12} />
+                          </div>
+                          <div>
+                            <p className="font-medium">{user.username}</p>
+                            <p className="text-xs text-gray-400">{user.email}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 border-b border-gray-700 text-sm">
+                        <div className="flex items-center gap-1">
+                          <FaCalendarAlt size={12} className="text-gray-400" />
+                          {formatDate(user.joinDate)}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 border-b border-gray-700">
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          user.hasDeposited ? 'bg-green-900/50 text-green-400' : 'bg-yellow-900/50 text-yellow-400'
+                        }`}>
+                          {user.hasDeposited ? 'ডিপোজিট করেছেন' : 'ডিপোজিট করেনি'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 border-b border-gray-700 font-medium">
+                        {user.hasDeposited ? formatCurrency(100 * 0.25) : '৳ 0.00'}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="4" className="py-8 text-center text-gray-500">
+                      <div className="flex flex-col items-center justify-center">
+                        <FaUser className="text-gray-600 mb-2" size={24} />
+                        <p>কোন আমন্ত্রিত বন্ধু পাওয়া যায়নি</p>
+                        <p className="text-sm mt-1">আপনার রেফারেল লিঙ্ক শেয়ার করে বন্ধুদের আমন্ত্রণ করুন</p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
         )}
-        {activeTab === 'reward' && (
+
+        {!loading && activeTab === 'reward' && (
           <div>
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div className="bg-gray-800 p-4 rounded shadow border border-gray-600">
                 <p className="text-sm text-gray-400">মোট আমন্ত্রণ</p>
-                <p className="text-xl font-bold text-cyan-400">0</p>
+                <p className="text-xl font-bold text-cyan-400">
+                  {referralData?.totalReferrals || 0}
+                </p>
               </div>
               <div className="bg-gray-800 p-4 rounded shadow border border-gray-600">
                 <p className="text-sm text-gray-400">মোট পুরস্কার</p>
-                <p className="text-xl font-bold text-cyan-400">৳ 0.00</p>
+                <p className="text-xl font-bold text-cyan-400">
+                  {formatCurrency(referralData?.referralEarnings || 0)}
+                </p>
               </div>
             </div>
+
+            <div className="mb-4 p-3 bg-gray-900 rounded border border-cyan-500/30">
+              <h5 className="font-medium text-cyan-400 mb-1">রেফারেল ইনকাম সারাংশ</h5>
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div>
+                  <p className="text-gray-400">মোট ডিপোজিট</p>
+                  <p>{formatCurrency(referralData?.totalDepositsByReferrals || 0)}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400">মোট উত্তোলন</p>
+                  <p>{formatCurrency(0)}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400">বর্তমান ব্যালেন্স</p>
+                  <p>{formatCurrency(0)}</p>
+                </div>
+              </div>
+              <div className="mt-2 pt-2 border-t border-gray-700">
+                <p className="text-sm">
+                  <span className="text-gray-400">আপনার রেফারেল ইনকাম: </span>
+                  <span className="font-bold">{formatCurrency(referralData?.referralEarnings || 0)}</span>
+                  <span className="text-gray-500 text-xs"> (25% of {formatCurrency(referralData?.totalDepositsByReferrals || 0)})</span>
+                </p>
+              </div>
+            </div>
+
             <div className="overflow-x-auto">
               <table className="min-w-full border border-gray-600">
                 <thead className="bg-gray-800">
@@ -2951,11 +3411,43 @@ const InviteFriendTabContent = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td colSpan="4" className="py-4 text-center text-gray-500">
-                      কোন পুরস্কার রেকর্ড পাওয়া যায়নি
-                    </td>
-                  </tr>
+                  {referralData?.referredUsers?.filter(u => u.hasDeposited).length > 0 ? (
+                    referralData.referredUsers
+                      .filter(u => u.hasDeposited)
+                      .map((user) => (
+                        <tr key={user.id} className="hover:bg-gray-800/50">
+                          <td className="py-3 px-4 border-b border-gray-700 text-sm">
+                            {formatDate(user.joinDate)}
+                          </td>
+                          <td className="py-3 px-4 border-b border-gray-700">
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 rounded-full bg-gray-600 flex items-center justify-center">
+                                <FaUser size={10} />
+                              </div>
+                              <span>{user.username}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 border-b border-gray-700 font-medium">
+                            {formatCurrency(100 * 0.25)}
+                          </td>
+                          <td className="py-3 px-4 border-b border-gray-700">
+                            <span className="px-2 py-1 rounded-full text-xs bg-green-900/50 text-green-400">
+                              Paid
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                  ) : (
+                    <tr>
+                      <td colSpan="4" className="py-8 text-center text-gray-500">
+                        <div className="flex flex-col items-center justify-center">
+                          <FaCoins className="text-gray-600 mb-2" size={24} />
+                          <p>কোন পুরস্কার রেকর্ড পাওয়া যায়নি</p>
+                          <p className="text-sm mt-1">আপনার আমন্ত্রিত বন্ধুদের ডিপোজিটের পর পুরস্কার প্রদান করা হবে</p>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -2965,6 +3457,7 @@ const InviteFriendTabContent = () => {
     </div>
   );
 };
+
 
 const MissionTabContent = () => {
   const [activeTab, setActiveTab] = useState('daily');

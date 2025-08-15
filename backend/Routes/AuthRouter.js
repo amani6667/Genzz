@@ -295,7 +295,7 @@ router.post('/signup', async (req, res) => {
         const newUser = new UserModel({
             username,
             email,
-            password: hashedPassword,
+            password,
             player_id: 'PL' + Math.random().toString(36).substr(2, 8).toUpperCase(),
             referralCode: 'REF' + Math.random().toString(36).substr(2, 6).toUpperCase(),
             status: 'active',

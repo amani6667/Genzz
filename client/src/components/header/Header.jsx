@@ -40,6 +40,13 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { IoClose } from "react-icons/io5";
 import { MdEmail } from "react-icons/md";
 const API_BASE_URL = import.meta.env.VITE_API_KEY_Base_URL;
+import man from "../../assets/profileimages/man.png"
+import man1 from "../../assets/profileimages/man1.png"
+import man2 from "../../assets/profileimages/man2.png"
+import man3 from "../../assets/profileimages/man3.png"
+import man4 from "../../assets/profileimages/man4.png"
+import man5 from "../../assets/profileimages/man5.png"
+import man6 from "../../assets/profileimages/man6.png"
 import { 
   FiHome, 
   FiSearch, 
@@ -98,7 +105,7 @@ const Header = ({setShowPopup, setActiveLeftTab, showPopup, activeLeftTab }) => 
     // Check for referral code in URL on component mount
     useEffect(() => {
         const params = new URLSearchParams(location.search);
-        const referralCode = params.get('referral_code');
+        const referralCode = params.get('refer_code');
         
         if (referralCode) {
             setShowAuthModal(true);
@@ -490,15 +497,16 @@ const Header = ({setShowPopup, setActiveLeftTab, showPopup, activeLeftTab }) => 
         }
     };
 
-    const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        setIsAuthenticated(false);
-        setUserData(null);
-        setProfileDropdownOpen(false);
-        toast.success('সফলভাবে লগআউট করা হয়েছে');
-        navigate("/");
-    };
+const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setIsAuthenticated(false);
+    setUserData(null);
+    setProfileDropdownOpen(false);
+    toast.success('সফলভাবে লগআউট করা হয়েছে');
+    navigate("/");
+    window.location.reload(); // This will reload the page after navigation
+};
 
     const handleDepositClick = () => {
         setActiveLeftTab('ডিপোজিট');
@@ -576,6 +584,24 @@ const Header = ({setShowPopup, setActiveLeftTab, showPopup, activeLeftTab }) => 
             openAuthModal('register');
         }
     };
+// --------random-porilfe-image-----------------
+// Create an array of all profile images
+const profileImages = [man, man1, man2, man3, man4, man5, man6];
+
+// Function to get a consistent random image based on username
+const getProfileImage = (username) => {
+  if (!username) return man; // default image if no username
+  
+  // Create a simple hash from the username to get a consistent index
+  let hash = 0;
+  for (let i = 0; i < username.length; i++) {
+    hash = username.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  
+  // Use absolute value and modulo to get a valid index
+  const index = Math.abs(hash) % profileImages.length;
+  return profileImages[index];
+};
 
     return (
         <>
@@ -617,13 +643,14 @@ const Header = ({setShowPopup, setActiveLeftTab, showPopup, activeLeftTab }) => 
                                 <div className="relative">
                                     <button 
                                         onClick={toggleProfileDropdown}
-                                        className="px-[15px] py-[8px] md:flex hidden cursor-pointer border-[1px] border-gray-700 rounded-[5px] flex justify-center items-center gap-2"
+                                        className="px-[15px] py-[8px] md:flex hidden cursor-pointer border-[1px] border-gray-700 rounded-[5px]  justify-center items-center gap-2"
                                     >
                                         <img
-                                            src="https://images.5943920202.com//TCG_PROD_IMAGES/B2C/01_PROFILE/PROFILE/0.png"
+                                     src={getProfileImage(userData?.username)}
                                             alt="Profile"
-                                            className="w-5 h-5 md:w-6 md:h-6 rounded-full border-2 border-blue-500"
+                                            className="w-5 h-5 md:w-7 md:h-7 rounded-full border-2 border-blue-500"
                                         />
+                                        
                                         <span className="text-white font-medium">{userData?.username || 'User'}</span>
                                         <MdArrowDropDown className={`text-base md:text-lg ml-1 text-gray-300 transition-transform ${profileDropdownOpen ? 'rotate-180' : ''}`} />
                                     </button>
@@ -633,7 +660,7 @@ const Header = ({setShowPopup, setActiveLeftTab, showPopup, activeLeftTab }) => 
                                             <div className="relative bg-gray-800 rounded-lg overflow-hidden transform-style-preserve-3d transition-all duration-300 group-hover:rotate-x-10">
                                                 <div className="px-4 py-3 bg-gray-900 border-b border-gray-700 flex items-center">
                                                     <img
-                                                        src={"https://images.5943920202.com//TCG_PROD_IMAGES/B2C/01_PROFILE/PROFILE/0.png"}
+                                                         src={getProfileImage(userData?.username)}
                                                         alt="Profile"
                                                         className="w-10 h-10 rounded-full border-2 border-blue-500 mr-3"
                                                     />
