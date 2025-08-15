@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FaFacebookF,
@@ -36,55 +36,72 @@ import {
   FaChevronDown,
   FaFilter,
   FaSearch,
-  FaCalendarAlt
+  FaCalendarAlt,
+  FaTimesCircle ,
+  
 } from 'react-icons/fa';
+import { MdEmail } from "react-icons/md";
+import { FaLock } from "react-icons/fa";
 import { FaEyeSlash } from 'react-icons/fa';
 import { useUser } from '../../context/UserContext';
 import { FaUser } from "react-icons/fa";
 import { IoClose } from "react-icons/io5";
 import axios from "axios"
 import toast,{Toaster} from "react-hot-toast"
+import popular_img from "../../assets/popular.png"
+import dice_img from "../../assets/dice.png"
+import user_img from "../../assets/user.png"
+import bonus_img from "../../assets/bonus.png"
+import affiliate_img from "../../assets/affiliate.png"
+import question_img from "../../assets/question.png"
+import teamwork_img from "../../assets/teamwork.png"
+import party_img from "../../assets/party.png"
+
 const menuItems = [
   { 
-    icon: <FaFire className="text-orange-400" />, 
-    label: 'গরম খেলা',
+    icon: popular_img, 
+    label: 'ক্যাসিনো',
     path: '/hot-games' 
   },
   { 
-    icon: <FaUserFriends className="text-blue-400" />, 
-    label: 'বন্ধুর আমন্ত্রণ',
-    leftTab: 'বন্ধুর আমন্ত্রণ করুন'
+    icon: dice_img, 
+    label: 'জনপ্রিয়',
+    path: '/hot-games' 
   },
   { 
-    icon: <FaMedal className="text-yellow-400" />, 
-    label: 'পুরস্কার কেন্দ্র',
-    leftTab: 'পুরস্কার কেন্দ্র'
+    icon: user_img, 
+    label: 'আমার একাউন্ট',
+    leftTab: 'আমার অ্যাকাউন্ট' // This will open the profile popup with the "আমার অ্যাকাউন্ট" tab selected
   },
   { 
-    icon: <FaFutbol className="text-red-400" />, 
-    label: 'লাইভ',
-    path: '/live-games'  
+    icon: bonus_img, 
+    label: 'বোনাস',
+    leftTab: 'পুরস্কার কেন্দ্র' // This will open the profile popup with the "পুরস্কার কেন্দ্র" tab selected
   },
   { 
-    icon: <FaBullseye className="text-red-500" />, 
-    label: 'মিশন',
-    leftTab: 'মিশন'
+    icon: popular_img, 
+    label: 'প্রভাইডার',
+    path: '/provider' 
   },
   { 
-    icon: <FaHandsHelping className="text-blue-300" />, 
-    label: 'স্পোর্টস' 
+    icon: affiliate_img, 
+    label: 'এফিলিয়েট',
+    path: '/affiliate-programme' 
   },
   { 
-    icon: <FaFlag className="text-green-500" />, 
-    label: 'বাংলা' 
+    icon: party_img, 
+    label: 'ভিআইপি ক্লাব',
+    path: '/vip-club' 
   },
   { 
-    icon: <FaHeadset className="text-teal-400" />, 
-    label: 'গ্রাহক সেবা' 
+    icon: teamwork_img, 
+    label: 'রেফারেল প্রোগ্রাম'
+    // This will open the InvitePopup if logged in, or login popup if not
   },
   { 
-    icon: <FaQuestionCircle className="text-purple-400" />, 
-    label: 'FAQ/নীতি' 
+    icon: question_img,
+    label: 'FAQ/নীতি',
+    path: '/faq-policy' 
   },
 ];
 
@@ -100,12 +117,14 @@ const leftMenuItems = [
   'মিশন',
   'অভ্যন্তরীণ বার্তা',
 ];
-
 const Sidebar = ({ showPopup, setShowPopup, activeLeftTab, setActiveLeftTab }) => {
   const [selectedMenu, setSelectedMenu] = useState(null);
   const [showInvitePopup, setShowInvitePopup] = useState(false);
   const [showSupport, setShowSupport] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [activeTab, setActiveTab] = useState('login');
   const navigate = useNavigate();
+  const { userData, loading, error } = useUser(); // Get user data from context
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -115,8 +134,28 @@ const Sidebar = ({ showPopup, setShowPopup, activeLeftTab, setActiveLeftTab }) =
   }, []);
 
   const handleMenuClick = (item) => {
-    if (item.label === 'বন্ধুর আমন্ত্রণ') {
-      setShowInvitePopup(true);
+    if (item.label === 'রেফারেল প্রোগ্রাম') {
+      if (!userData) {
+        // If not logged in, show login popup
+        setShowAuthModal(true);
+        setActiveTab('login');
+      } else {
+        // If logged in, show invite popup
+        setShowInvitePopup(true);
+      }
+    } else if (item.label === 'আমার একাউন্ট' || item.label === 'বোনাস') {
+      if (!userData) {
+        // If not logged in, show login popup
+        setShowAuthModal(true);
+        setActiveTab('login');
+      } else {
+        // If logged in, show the appropriate popup
+        setSelectedMenu(item);
+        if (item.leftTab) {
+          setActiveLeftTab(item.leftTab);
+        }
+        setShowPopup(true);
+      }
     } else if (item.path) {
       navigate(item.path);
     } else {
@@ -134,32 +173,18 @@ const Sidebar = ({ showPopup, setShowPopup, activeLeftTab, setActiveLeftTab }) =
     setSelectedMenu(null);
   };
 
+  const closeAuthModal = () => {
+    setShowAuthModal(false);
+  };
+
   return (
     <>
-      <div className="bg-gray-900 w-[330px] h-full fixed top-[70px] overflow-y-auto no-scrollbar left-0 px-4 py-6">
+      <div className="bg-gray-900 w-[330px] border-r-[1px] border-gray-600 h-full fixed top-[70px] overflow-y-auto no-scrollbar left-0 px-4 py-6">
         {/* Original Menu Grid */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           {menuItems.map((item, index) => (
             <MenuCard key={index} item={item} onClick={() => handleMenuClick(item)} />
           ))}
-        </div>
-        
-        {/* New Support Button (fixed at bottom) */}
-        <div className={`fixed bottom-6 left-4 w-[calc(330px-32px)] transition-all duration-500 ease-in-out ${showSupport ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-          <div className="border-[1px] border-gray-700 text-white rounded-lg p-4 cursor-pointer shadow-lg hover:shadow-xl transition-all">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-                <span className="font-medium">সাপোর্ট</span>
-              </div>
-              <svg className="w-5 h-5 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h4v4H8zm8 0h4v4h-4z" />
-              </svg>
-            </div>
-            <p className="text-sm mt-1">আমাদের সাথে যোগাযোগ করুন</p>
-          </div>
         </div>
       </div>
 
@@ -175,6 +200,694 @@ const Sidebar = ({ showPopup, setShowPopup, activeLeftTab, setActiveLeftTab }) =
       {showInvitePopup && (
         <InvitePopup onClose={handleClosePopup} />
       )}
+
+      {showAuthModal && (
+        <AuthModal 
+          showAuthModal={showAuthModal} 
+          closeAuthModal={closeAuthModal} 
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+        />
+      )}
+    </>
+  );
+};
+
+const AuthModal = ({ showAuthModal, closeAuthModal, activeTab, setActiveTab }) => {
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    confirmPassword: '',
+    referralCode: ''
+  });
+  const [errors, setErrors] = useState({
+    password: '',
+    confirmPassword: '',
+    email: '',
+    formError: ''
+  });
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otpEmail, setOtpEmail] = useState('');
+  const [otpRequested, setOtpRequested] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+  const [referralCodeValid, setReferralCodeValid] = useState(false);
+  const [referralCodeChecking, setReferralCodeChecking] = useState(false);
+  const [referralCodeError, setReferralCodeError] = useState('');
+  const [referrerInfo, setReferrerInfo] = useState(null);
+  const otpInputRefs = useRef([]);
+  const API_BASE_URL = import.meta.env.VITE_API_KEY_Base_URL;
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (showOtpModal && countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [countdown, showOtpModal]);
+
+  const checkReferralCode = async (code) => {
+    if (!code) {
+      setReferralCodeValid(false);
+      setReferralCodeError('');
+      setReferrerInfo(null);
+      return;
+    }
+
+    setReferralCodeChecking(true);
+    try {
+      const response = await axios.get(`${API_BASE_URL}/auth/check-referral-code/${code}`);
+      if (response.data.exists) {
+        setReferralCodeValid(true);
+        setReferralCodeError('');
+        setReferrerInfo(response.data.referrer);
+      } else {
+        setReferralCodeValid(false);
+        setReferralCodeError('অবৈধ রেফারেল কোড');
+        setReferrerInfo(null);
+      }
+    } catch (error) {
+      setReferralCodeValid(false);
+      setReferralCodeError('রেফারেল কোড চেক করতে সমস্যা হয়েছে');
+      setReferrerInfo(null);
+    } finally {
+      setReferralCodeChecking(false);
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value
+    });
+    
+    if (errors[name] || errors.formError) {
+      setErrors({
+        ...errors,
+        [name]: '',
+        formError: ''
+      });
+    }
+
+    if (name === 'referralCode') {
+      checkReferralCode(value);
+    }
+  };
+
+  const handleOtpChange = (index, value) => {
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+
+    if (value && index < 5) {
+      otpInputRefs.current[index + 1].focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index, e) => {
+    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+      otpInputRefs.current[index - 1].focus();
+    }
+  };
+
+  const validateForm = () => {
+    let valid = true;
+    const newErrors = {
+      password: '',
+      confirmPassword: '',
+      email: '',
+      formError: ''
+    };
+
+    if (!formData.email) {
+      newErrors.email = 'ইমেইল প্রয়োজন';
+      valid = false;
+    } else if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
+      newErrors.email = 'সঠিক ইমেইল দিন';
+      valid = false;
+    }
+
+    if ((activeTab === 'login' || activeTab === 'register' || activeTab === 'reset-password') && !formData.password) {
+      newErrors.password = 'পাসওয়ার্ড প্রয়োজন';
+      valid = false;
+    } else if ((activeTab === 'login' || activeTab === 'register' || activeTab === 'reset-password') && formData.password.length < 6) {
+      newErrors.password = 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষর হতে হবে';
+      valid = false;
+    }
+
+    if (activeTab === 'register' || activeTab === 'reset-password') {
+      if (formData.password !== formData.confirmPassword) {
+        newErrors.confirmPassword = 'পাসওয়ার্ড মিলছে না';
+        valid = false;
+      }
+    }
+
+    if (activeTab === 'register' && formData.referralCode && !referralCodeValid) {
+      newErrors.formError = 'অবৈধ রেফারেল কোড';
+      valid = false;
+    }
+
+    setErrors(newErrors);
+    return valid;
+  };
+
+  const handleLogin = async () => {
+    if (!validateForm()) return;
+
+    try {
+      const response = await axios.post(`${API_BASE_URL}/auth/login`, {
+        email: formData.email,
+        password: formData.password
+      });
+
+      const { token, user } = response.data;
+      
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      
+      closeAuthModal();
+      toast.success('সফলভাবে লগইন করা হয়েছে!');
+      navigate("/");
+      window.location.reload();
+    } catch (error) {
+      setErrors({
+        ...errors,
+        formError: error.response?.data?.message || 'লগইন করতে সমস্যা হয়েছে'
+      });
+    }
+  };
+
+  const handleRegister = async () => {
+    if (!validateForm()) return;
+    if (formData.referralCode && !referralCodeValid) {
+      setErrors({
+        ...errors,
+        formError: 'অবৈধ রেফারেল কোড'
+      });
+      return;
+    }
+
+    try {
+      const response = await axios.post(`${API_BASE_URL}/auth/signup`, {
+        email: formData.email,
+        password: formData.password,
+        referralCode: formData.referralCode
+      });
+
+      const { token, user } = response.data;
+      
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      
+      closeAuthModal();
+      toast.success('সফলভাবে নিবন্ধন করা হয়েছে!');
+      navigate("/");
+      window.location.reload();
+    } catch (error) {
+      setErrors({
+        ...errors,
+        formError: error.response?.data?.message || 'নিবন্ধন করতে সমস্যা হয়েছে'
+      });
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!validateForm()) return;
+
+    try {
+      const response = await axios.post(`${API_BASE_URL}/auth/request-password-reset`, {
+        email: formData.email
+      });
+
+      setOtpEmail(formData.email);
+      setShowOtpModal(true);
+      setOtpRequested(true);
+      setCountdown(60);
+      toast.success('OTP ইমেইলে পাঠানো হয়েছে');
+    } catch (error) {
+      setErrors({
+        ...errors,
+        formError: error.response?.data?.message || 'পাসওয়ার্ড রিসেট করতে সমস্যা হয়েছে'
+      });
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    const otpCode = otp.join('');
+    
+    if (otpCode.length !== 6) {
+      toast.error('সম্পূর্ণ OTP দিন');
+      return;
+    }
+
+    try {
+      const response = await axios.post(`${API_BASE_URL}/auth/verify-reset-otp`, {
+        email: otpEmail,
+        otp: otpCode
+      });
+
+      const { resetToken } = response.data;
+      
+      localStorage.setItem('resetToken', resetToken);
+      
+      setActiveTab('reset-password');
+      setShowOtpModal(false);
+      setOtp(['', '', '', '', '', '']);
+      toast.success('OTP সফলভাবে যাচাই করা হয়েছে');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'OTP যাচাই করতে সমস্যা হয়েছে');
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!validateForm()) return;
+
+    try {
+      const resetToken = localStorage.getItem('resetToken');
+      
+      const response = await axios.post(`${API_BASE_URL}/auth/reset-password`, {
+        resetToken,
+        newPassword: formData.password
+      });
+
+      localStorage.removeItem('resetToken');
+      closeAuthModal();
+      toast.success('পাসওয়ার্ড সফলভাবে রিসেট করা হয়েছে');
+      
+      const loginResponse = await axios.post(`${API_BASE_URL}/auth/login`, {
+        email: response.data.user.email,
+        password: formData.password
+      });
+
+      const { token, user } = loginResponse.data;
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      navigate("/");
+      window.location.reload();
+    } catch (error) {
+      setErrors({
+        ...errors,
+        formError: error.response?.data?.message || 'পাসওয়ার্ড রিসেট করতে সমস্যা হয়েছে'
+      });
+    }
+  };
+
+  const resendOtp = async () => {
+    if (countdown > 0) return;
+
+    try {
+      await axios.post(`${API_BASE_URL}/auth/request-password-reset`, {
+        email: otpEmail
+      });
+
+      setCountdown(60);
+      toast.success('নতুন OTP ইমেইলে পাঠানো হয়েছে');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'OTP পুনরায় পাঠাতে সমস্যা হয়েছে');
+    }
+  };
+
+  return (
+    <>
+      {showAuthModal && (
+        <div className="fixed inset-0 z-[10001] flex items-center justify-center bg-[rgba(0,0,0,0.8)] p-4">
+          <div className="bg-gray-800 w-full max-w-lg rounded-[5px] shadow-2xl overflow-hidden border border-gray-700">
+            <div className="px-6 py-4 flex justify-between items-center">
+              <h2 className="text-white text-xl font-bold">
+                {activeTab === 'login' && 'লগইন করুন'}
+                {activeTab === 'register' && 'নিবন্ধন করুন'}
+                {activeTab === 'forgot-password' && 'পাসওয়ার্ড রিসেট করুন'}
+                {activeTab === 'reset-password' && 'নতুন পাসওয়ার্ড সেট করুন'}
+              </h2>
+              <button 
+                onClick={closeAuthModal}
+                className="text-white hover:text-gray-300 transition-colors"
+              >
+                <FaTimesCircle className="text-xl" />
+              </button>
+            </div>
+
+            <div className="flex border-b border-gray-700">
+              {['login', 'register'].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`flex-1 py-3 text-sm md:text-base font-medium cursor-pointer ${
+                    activeTab === tab ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-gray-400'
+                  }`}
+                >
+                  {tab === 'login' ? 'লগইন' : 'নিবন্ধন'}
+                </button>
+              ))}
+            </div>
+
+            <div className="p-6">
+              {errors.formError && (
+                <div className="mb-4 p-3 bg-red-900/50 border border-red-700 rounded-md text-red-300 text-sm">
+                  {errors.formError}
+                </div>
+              )}
+
+              {activeTab === 'login' && (
+                <div className="space-y-4">
+                  <div className="relative">
+                    <MdEmail className="absolute left-3 top-3 text-cyan-400 text-sm md:text-base" />
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      placeholder="ইমেইল"
+                      className={`w-full bg-gray-700 text-white border ${errors.email ? 'border-red-500' : 'border-gray-600'} py-2 pl-10 pr-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base placeholder-gray-400`}
+                    />
+                    {errors.email && (
+                      <p className="text-red-400 text-xs mt-1">{errors.email}</p>
+                    )}
+                  </div>
+
+                  <div className="relative">
+                    <FaLock className="absolute left-3 top-3 text-cyan-400 text-sm md:text-base" />
+                    <input
+                      type={passwordVisible ? "text" : "password"}
+                      name="password"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      placeholder="পাসওয়ার্ড"
+                      className={`w-full bg-gray-700 text-white border ${errors.password ? 'border-red-500' : 'border-gray-600'} py-2 pl-10 pr-10 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base placeholder-gray-400`}
+                    />
+                    <button
+                      onClick={() => setPasswordVisible(!passwordVisible)}
+                      className="absolute right-3 top-3 text-cyan-400 cursor-pointer"
+                    >
+                      {passwordVisible ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                    {errors.password && (
+                      <p className="text-red-400 text-xs mt-1">{errors.password}</p>
+                    )}
+                  </div>
+
+                  <div className="flex justify-between items-center text-sm text-cyan-400">
+                    <div className="flex items-center">
+                      <input type="checkbox" id="remember" className="mr-2 accent-blue-500" />
+                      <label htmlFor="remember">মনে রাখুন</label>
+                    </div>
+                    <button 
+                      onClick={() => setActiveTab('forgot-password')}
+                      className="text-cyan-400 hover:underline cursor-pointer"
+                    >
+                      পাসওয়ার্ড ভুলে গেছেন?
+                    </button>
+                  </div>
+
+                  <button 
+                    onClick={handleLogin}
+                    className="w-full bg-cyan-500 hover:bg-cyan-600 text-gray-900 px-[20px] py-[10px] rounded-[5px] "
+                  >
+                    লগইন করুন
+                  </button>
+                </div>
+              )}
+
+              {activeTab === 'register' && (
+                <div className="space-y-4">
+                  <div className="relative">
+                    <MdEmail className="absolute left-3 top-3 text-cyan-400 text-sm md:text-base" />
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      placeholder="ইমেইল"
+                      className={`w-full bg-gray-700 text-white border ${errors.email ? 'border-red-500' : 'border-gray-600'} py-2 pl-10 pr-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base placeholder-gray-400`}
+                    />
+                    {errors.email && (
+                      <p className="text-red-400 text-xs mt-1">{errors.email}</p>
+                    )}
+                  </div>
+
+                  <div className="relative">
+                    <FaLock className="absolute left-3 top-3 text-cyan-400 text-sm md:text-base" />
+                    <input
+                      type={passwordVisible ? "text" : "password"}
+                      name="password"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      placeholder="পাসওয়ার্ড"
+                      className={`w-full bg-gray-700 text-white border ${errors.password ? 'border-red-500' : 'border-gray-600'} py-2 pl-10 pr-10 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base placeholder-gray-400`}
+                    />
+                    <button
+                      onClick={() => setPasswordVisible(!passwordVisible)}
+                      className="absolute right-3 top-3 text-cyan-400 cursor-pointer"
+                    >
+                      {passwordVisible ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                    {errors.password && (
+                      <p className="text-red-400 text-xs mt-1">{errors.password}</p>
+                    )}
+                  </div>
+
+                  <div className="relative">
+                    <FaLock className="absolute left-3 top-3 text-cyan-400 text-sm md:text-base" />
+                    <input
+                      type={confirmPasswordVisible ? "text" : "password"}
+                      name="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={handleInputChange}
+                      placeholder="পাসওয়ার্ড নিশ্চিত করুন"
+                      className={`w-full bg-gray-700 text-white border ${errors.confirmPassword ? 'border-red-500' : 'border-gray-600'} py-2 pl-10 pr-10 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base placeholder-gray-400`}
+                    />
+                    <button
+                      onClick={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
+                      className="absolute right-3 top-3 text-cyan-400 cursor-pointer"
+                    >
+                      {confirmPasswordVisible ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                    {errors.confirmPassword && (
+                      <p className="text-red-400 text-xs mt-1">{errors.confirmPassword}</p>
+                    )}
+                  </div>
+
+                  <div className="relative">
+                    <FaUserFriends className="absolute left-3 top-3 text-cyan-400 text-sm md:text-base" />
+                    <input
+                      type="text"
+                      name="referralCode"
+                      value={formData.referralCode}
+                      onChange={handleInputChange}
+                      placeholder="রেফারেল কোড (ঐচ্ছিক)"
+                      className="w-full bg-gray-700 text-white border border-gray-600 py-2 pl-10 pr-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base placeholder-gray-400"
+                    />
+                    {referralCodeChecking && (
+                      <div className="absolute right-3 top-3">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-cyan-400"></div>
+                      </div>
+                    )}
+                    {referralCodeError && !referralCodeChecking && (
+                      <p className="text-red-400 text-xs mt-1">{referralCodeError}</p>
+                    )}
+                    {referrerInfo && !referralCodeChecking && (
+                      <p className="text-green-400 text-xs mt-1">
+                        রেফারার: {referrerInfo.username}
+                      </p>
+                    )}
+                  </div>
+
+                  <button 
+                    onClick={handleRegister}
+                    disabled={formData.referralCode && !referralCodeValid}
+                    className={`w-full bg-cyan-500 hover:bg-cyan-600 text-gray-900 px-[20px] py-[10px] rounded-[5px] ${
+                      formData.referralCode && !referralCodeValid ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                  >
+                    নিবন্ধন করুন
+                  </button>
+
+                  <div className="text-center text-sm text-gray-400">
+                    নিবন্ধন করে, আপনি আমাদের <a href="#" className="text-cyan-400 hover:underline">শর্তাবলী</a> এবং <a href="#" className="text-cyan-400 hover:underline">গোপনীয়তা নীতি</a> স্বীকার করেছেন
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'forgot-password' && (
+                <div className="space-y-4">
+                  <div className="relative">
+                    <MdEmail className="absolute left-3 top-3 text-cyan-400 text-sm md:text-base" />
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      placeholder="আপনার ইমেইল ঠিকানা"
+                      className={`w-full bg-gray-700 text-white border ${errors.email ? 'border-red-500' : 'border-gray-600'} py-2 pl-10 pr-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base placeholder-gray-400`}
+                    />
+                    {errors.email && (
+                      <p className="text-red-400 text-xs mt-1">{errors.email}</p>
+                    )}
+                  </div>
+
+                  <button 
+                    onClick={handleForgotPassword}
+                    className="w-full bg-cyan-500 hover:bg-cyan-600 text-gray-900 px-[20px] py-[10px] rounded-[5px] "
+                  >
+                    পাসওয়ার্ড রিসেট করুন
+                  </button>
+
+                  <button 
+                    onClick={() => setActiveTab('login')}
+                    className="flex items-center justify-center w-full text-cyan-400 hover:underline cursor-pointer text-sm"
+                  >
+                    <FaArrowLeft className="mr-1" /> লগইন পৃষ্ঠায় ফিরে যান
+                  </button>
+                </div>
+              )}
+
+              {activeTab === 'reset-password' && (
+                <div className="space-y-4">
+                  <div className="relative">
+                    <FaLock className="absolute left-3 top-3 text-cyan-400 text-sm md:text-base" />
+                    <input
+                      type={passwordVisible ? "text" : "password"}
+                      name="password"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      placeholder="নতুন পাসওয়ার্ড"
+                      className={`w-full bg-gray-700 text-white border ${errors.password ? 'border-red-500' : 'border-gray-600'} py-2 pl-10 pr-10 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base placeholder-gray-400`}
+                    />
+                    <button
+                      onClick={() => setPasswordVisible(!passwordVisible)}
+                      className="absolute right-3 top-3 text-cyan-400 cursor-pointer"
+                    >
+                      {passwordVisible ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                    {errors.password && (
+                      <p className="text-red-400 text-xs mt-1">{errors.password}</p>
+                    )}
+                  </div>
+
+                  <div className="relative">
+                    <FaLock className="absolute left-3 top-3 text-cyan-400 text-sm md:text-base" />
+                    <input
+                      type={confirmPasswordVisible ? "text" : "password"}
+                      name="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={handleInputChange}
+                      placeholder="পাসওয়ার্ড নিশ্চিত করুন"
+                      className={`w-full bg-gray-700 text-white border ${errors.confirmPassword ? 'border-red-500' : 'border-gray-600'} py-2 pl-10 pr-10 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base placeholder-gray-400`}
+                    />
+                    <button
+                      onClick={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
+                      className="absolute right-3 top-3 text-cyan-400 cursor-pointer"
+                    >
+                      {confirmPasswordVisible ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                    {errors.confirmPassword && (
+                      <p className="text-red-400 text-xs mt-1">{errors.confirmPassword}</p>
+                    )}
+                  </div>
+
+                  <button 
+                    onClick={handleResetPassword}
+                    className="w-full bg-cyan-500 hover:bg-cyan-600 text-gray-900 px-[20px] py-[10px] rounded-[5px] "
+                  >
+                    পাসওয়ার্ড পরিবর্তন করুন
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="px-6 py-4 border-t border-gray-700">
+              <div className="text-center text-sm text-gray-400">
+                {activeTab === 'login' ? (
+                  <>
+                    অ্যাকাউন্ট নেই?{' '}
+                    <button 
+                      onClick={() => setActiveTab('register')}
+                      className="text-cyan-400 hover:underline cursor-pointer"
+                    >
+                      নিবন্ধন করুন
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    ইতিমধ্যে অ্যাকাউন্ট আছে?{' '}
+                    <button 
+                      onClick={() => setActiveTab('login')}
+                      className="text-cyan-400 hover:underline cursor-pointer"
+                    >
+                      লগইন করুন
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showOtpModal && (
+        <div className="fixed inset-0 z-[10002] flex items-center justify-center bg-[rgba(0,0,0,0.6)] p-4 backdrop-blur-lg">
+          <div className="bg-gray-800 w-full max-w-lg rounded-[5px] shadow-2xl overflow-hidden border border-gray-700">
+            <div className="px-6 py-4 flex justify-between items-center">
+              <h2 className="text-white text-xl font-bold">OTP যাচাই করুন</h2>
+              <button 
+                onClick={() => {
+                  setShowOtpModal(false);
+                  setOtp(['', '', '', '', '', '']);
+                }}
+                className="text-white hover:text-gray-300 transition-colors"
+              >
+                <FaTimesCircle className="text-xl" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <p className="text-gray-300 mb-6 text-center">
+                ৬-অংকের OTP কোডটি ইমেইলে পাঠানো হয়েছে: {otpEmail}
+              </p>
+
+              <div className="flex justify-center space-x-3 mb-6">
+                {otp.map((digit, index) => (
+                  <input
+                    key={index}
+                    ref={(el) => (otpInputRefs.current[index] = el)}
+                    type="text"
+                    maxLength="1"
+                    value={digit}
+                    onChange={(e) => handleOtpChange(index, e.target.value)}
+                    onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                    className="w-12 h-12 bg-gray-700 border border-gray-600 rounded-md text-white text-center text-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                ))}
+              </div>
+
+              <button 
+                onClick={handleVerifyOtp}
+                className="w-full bg-cyan-500 hover:bg-cyan-600 text-gray-900 px-[20px] py-[10px] rounded-[5px] mb-4"
+              >
+                যাচাই করুন
+              </button>
+
+              <div className="text-center">
+                {countdown > 0 ? (
+                  <p className="text-gray-400 text-sm">
+                    {countdown} সেকেন্ড পর নতুন OTP পাঠানো যাবে
+                  </p>
+                ) : (
+                  <button 
+                    onClick={resendOtp}
+                    className="text-cyan-400 hover:underline cursor-pointer text-sm"
+                  >
+                    OTP পুনরায় পাঠান
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
@@ -182,10 +895,12 @@ const Sidebar = ({ showPopup, setShowPopup, activeLeftTab, setActiveLeftTab }) =
 const MenuCard = ({ item, onClick }) => (
   <div
     onClick={onClick}
-    className="bg-gray-800 hover:bg-gray-700 transition-all duration-300 border-[1px] border-gray-700 text-white rounded-[5px] p-4 flex flex-col items-center justify-center cursor-pointer"
+    className="bg-gray-800 hover:bg-gray-700 flex justify-start items-center transition-all duration-300 border-[1px] border-gray-700 text-white rounded-[5px] px-4 py-1.5 gap-2 cursor-pointer"
   >
-    <div className="text-2xl mb-2">{item.icon}</div>
-    <div className="text-xs text-center leading-tight font-medium text-gray-300">{item.label}</div>
+    <div className="text-2xl mb-2">
+      <img className='w-[30px]' src={item.icon} alt="" />
+    </div>
+    <div className="text-xs md:text-sm text-center leading-tight font-medium text-gray-300">{item.label}</div>
   </div>
 );
 
@@ -258,16 +973,6 @@ const InvitePopup = ({ onClose }) => {
   const [copied, setCopied] = useState(false);
   const { userData } = useUser();
   const base_url = import.meta.env.VITE_API_KEY_Base_URL;
-  const [todayWins, setTodayWins] = useState(null);
-
-  useEffect(() => {
-    const wins = Math.floor(Math.random() * 50) + 10;
-    const amount = Math.floor(Math.random() * 50000) + 10000;
-    setTodayWins({
-      count: wins,
-      amount: amount.toLocaleString()
-    });
-  }, []);
 
   const copyReferralLink = () => {
     const link = userData?.referralCode 
@@ -291,140 +996,111 @@ const InvitePopup = ({ onClose }) => {
 
   return (
     <div className="fixed inset-0 z-[10000] flex items-center justify-center backdrop-blur-sm bg-black/50 p-4">
-      <div className="bg-gray-800 text-white rounded-xl shadow-2xl max-w-5xl w-full relative border border-gray-700 overflow-hidden">
+      <div className="bg-gradient-to-br from-gray-800 to-gray-900 text-white rounded-xl shadow-2xl max-w-md w-full relative border border-gray-700 overflow-hidden">
         <button 
-          className="absolute top-4 right-4 cursor-pointer text-gray-400 hover:text-white text-xl z-10" 
+          className="absolute top-5 right-5 cursor-pointer text-gray-300 hover:text-white text-lg transition-colors" 
           onClick={onClose}
         >
           <FaTimes />
         </button>
         
         <div className="p-6">
-          <div className="flex items-start justify-between mb-6">
-            <div>
-              <h3 className="text-2xl font-bold text-cyan-400">বন্ধুকে আমন্ত্রণ করুন</h3>
-              <p className="text-gray-400 mt-1">আপনার বন্ধুদের আমন্ত্রণ করুন এবং বোনাস উপভোগ করুন</p>
-            </div>
-            
-            {todayWins && (
-              <div className="bg-gray-700/50 border border-cyan-400/30 rounded-lg px-4 py-2 text-center">
-                <p className="text-xs text-gray-300">আজকের রেফারেল জয়</p>
-                <p className="text-cyan-400 font-bold">{todayWins.count} জন</p>
-                <p className="text-xs text-green-400">৳{todayWins.amount} জিতেছে</p>
-              </div>
-            )}
+          <div className="text-center mb-6">
+            <h3 className="text-2xl font-bold text-cyan-400 mb-1">Invite Friends</h3>
+            <p className="text-gray-400">Earn rewards when your friends join</p>
           </div>
           
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="space-y-6">
-              <div>
-                <p className="text-gray-300 mb-2">আপনার রেফারেল লিঙ্ক:</p>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    className="flex-1 p-2 border border-gray-600 rounded bg-gray-700 text-white text-sm"
-                    value={userData?.referralCode ? `${base_url}/ref/${userData.referralCode}` : base_url}
-                    readOnly
-                  />
-                  <button 
-                    onClick={copyReferralLink}
-                    className="bg-cyan-500 hover:bg-cyan-600 text-gray-900 px-3 py-2 rounded flex items-center gap-1 text-sm"
-                  >
-                    <FaCopy /> {copied ? 'কপি হয়েছে!' : 'কপি করুন'}
-                  </button>
-                </div>
-                {!userData && (
-                  <p className="text-xs text-gray-400 mt-1">লগইন করলে আপনার ব্যক্তিগত রেফারেল লিঙ্ক পাবেন</p>
-                )}
+          <div className="space-y-6">
+            <div>
+              <p className="text-gray-300 mb-2 text-sm font-medium">Your referral link</p>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  className="flex-1 p-3 border border-gray-600 rounded-lg bg-gray-700 text-white text-sm"
+                  value={userData?.referralCode ? `${base_url}/ref/${userData.referralCode}` : base_url}
+                  readOnly
+                />
+                <button 
+                  onClick={copyReferralLink}
+                  className={`px-4 py-3 rounded-lg flex items-center gap-1 text-sm font-medium transition-colors ${
+                    copied ? 'bg-green-500 text-white' : 'bg-cyan-500 hover:bg-cyan-600 text-gray-900'
+                  }`}
+                >
+                  {copied ? 'Copied!' : <FaCopy />}
+                </button>
               </div>
-              
-              <div>
-                <p className="text-gray-300 mb-2">সোশ্যাল মিডিয়ায় শেয়ার করুন:</p>
-                <div className="flex gap-3">
-                  <a 
-                    href={shareLinks.facebook} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full transition-colors"
-                  >
-                    <FaFacebookF />
-                  </a>
-                  <a 
-                    href={shareLinks.twitter} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="bg-blue-400 hover:bg-blue-500 text-white p-3 rounded-full transition-colors"
-                  >
-                    <FaTwitter />
-                  </a>
-                  <a 
-                    href={shareLinks.telegram} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-full transition-colors"
-                  >
-                    <FaTelegramPlane />
-                  </a>
-                  <a 
-                    href={shareLinks.whatsapp} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="bg-green-500 hover:bg-green-600 text-white p-3 rounded-full transition-colors"
-                  >
-                    <FaWhatsapp />
-                  </a>
-                </div>
-              </div>
-              
-              {userData && (
-                <div className="bg-gray-700/50 p-3 rounded-lg border border-gray-600">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-gray-400 text-sm">আপনার আমন্ত্রিত বন্ধু</p>
-                      <p className="text-cyan-400 font-bold">{userData.referrals || 0} জন</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-400 text-sm">আপনার উপার্জন</p>
-                      <p className="text-green-400 font-bold">৳{userData.referralEarnings || 0}</p>
-                    </div>
-                    <div className="bg-cyan-400/10 px-3 py-1 rounded-full text-cyan-400 text-sm flex items-center gap-1">
-                      <FaUser /> লেভেল {userData.referralLevel || 1}
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
             
-            <div className="space-y-4">
-              <div className="bg-gray-700 p-4 rounded-lg border border-gray-600 h-full">
-                <h4 className="font-medium mb-3 text-cyan-400 text-lg">আমন্ত্রণ নিয়ম ও পুরস্কার</h4>
-                <ul className="list-disc pl-5 text-sm text-gray-300 space-y-2">
-                  <li>প্রতিটি সফল আমন্ত্রণের জন্য আপনি <span className="text-green-400">50 টাকা বোনাস</span> পাবেন</li>
-                  <li>আপনার আমন্ত্রিত বন্ধুকে ন্যূনতম <span className="text-amber-400">500 টাকা ডিপোজিট</span> করতে হবে</li>
-                  <li>আপনার আমন্ত্রিত বন্ধুকে ন্যূনতম <span className="text-amber-400">3টি বেট</span> প্লেস করতে হবে</li>
-                  <li>আপনার বন্ধুও পাবে <span className="text-green-400">20 টাকা বোনাস</span> তাদের প্রথম ডিপোজিটে</li>
-                  <li>10+ রেফারেলে আপনি পাবেন <span className="text-purple-400">VIP লেভেল 1</span></li>
-                  <li>50+ রেফারেলে আপনি পাবেন <span className="text-purple-400">VIP লেভেল 2</span> এবং অতিরিক্ত বোনাস</li>
-                </ul>
-                
-                <div className="mt-4 pt-3 border-t border-gray-600">
-                  <h5 className="text-cyan-400 font-medium mb-2">রেফারেল টিয়ার সিস্টেম</h5>
-                  <div className="grid grid-cols-3 gap-2 text-xs">
-                    <div className="bg-gray-600/50 p-2 rounded text-center">
-                      <p>লেভেল 1</p>
-                      <p className="text-green-400">10% কমিশন</p>
-                    </div>
-                    <div className="bg-gray-600/50 p-2 rounded text-center">
-                      <p>লেভেল 2</p>
-                      <p className="text-green-400">5% কমিশন</p>
-                    </div>
-                    <div className="bg-gray-600/50 p-2 rounded text-center">
-                      <p>লেভেল 3</p>
-                      <p className="text-green-400">2% কমিশন</p>
-                    </div>
+            <div>
+              <p className="text-gray-300 mb-2 text-sm font-medium">Share via</p>
+              <div className="flex justify-center gap-4">
+                <a 
+                  href={shareLinks.facebook} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="bg-[#1877F2] hover:bg-[#166FE5] text-white p-3 rounded-full transition-colors"
+                >
+                  <FaFacebookF size={16} />
+                </a>
+                <a 
+                  href={shareLinks.twitter} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="bg-[#1DA1F2] hover:bg-[#1A91DA] text-white p-3 rounded-full transition-colors"
+                >
+                  <FaTwitter size={16} />
+                </a>
+                <a 
+                  href={shareLinks.telegram} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="bg-[#0088CC] hover:bg-[#007AB8] text-white p-3 rounded-full transition-colors"
+                >
+                  <FaTelegramPlane size={16} />
+                </a>
+                <a 
+                  href={shareLinks.whatsapp} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="bg-[#25D366] hover:bg-[#22C35E] text-white p-3 rounded-full transition-colors"
+                >
+                  <FaWhatsapp size={16} />
+                </a>
+              </div>
+            </div>
+            
+            {userData && (
+              <div className="bg-gray-700/30 p-4 rounded-lg border border-gray-600/50">
+                <div className="flex items-center justify-around">
+                  <div className="text-center">
+                    <p className="text-gray-400 text-xs">Invited</p>
+                    <p className="text-cyan-400 font-bold text-xl">{userData.referrals || 0}</p>
+                  </div>
+                  <div className="h-8 w-px bg-gray-600"></div>
+                  <div className="text-center">
+                    <p className="text-gray-400 text-xs">Earnings</p>
+                    <p className="text-green-400 font-bold text-xl">৳{userData.referralEarnings || 0}</p>
                   </div>
                 </div>
               </div>
+            )}
+            
+            <div className="bg-gray-700/20 p-4 rounded-lg border border-dashed border-gray-600/50">
+              <h4 className="font-medium mb-2 text-cyan-400 text-center">How it works</h4>
+              <ul className="space-y-2 text-sm text-gray-300">
+                <li className="flex items-start gap-2">
+                  <span className="text-cyan-400 mt-0.5">•</span>
+                  <span>Get ৳50 when friend deposits ৳500</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-cyan-400 mt-0.5">•</span>
+                  <span>Friend gets ৳20 bonus too</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-cyan-400 mt-0.5">•</span>
+                  <span>Earn 10% from their Level 1 referrals</span>
+                </li>
+              </ul>
             </div>
           </div>
         </div>

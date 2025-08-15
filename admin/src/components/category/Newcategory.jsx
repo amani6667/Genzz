@@ -126,7 +126,7 @@ const Newcategory = () => {
       const response = await axios.post(`${base_url}/admin/categories`, data, {
         headers: {
              "Content-Type": "multipart/form-data",
-             'Authorization': localStorage.getItem('token')
+             'Authorization': localStorage.getItem('genzz_token')
             },
       });
       

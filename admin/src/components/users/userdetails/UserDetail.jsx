@@ -179,7 +179,7 @@ const UserDetail = () => {
           <label className="block text-[16px] font-medium text-gray-700 mb-[4px]">First Name *</label>
           <div className="flex items-center border-[1px] border-[#eee] rounded-[5px] p-2">
             <FaUser className="text-gray-500 mr-2" />
-            <input type="text" value={user_detail?.name} className="w-full outline-none text-[16px] font-medium text-gray-700" />
+            <input type="text" value={user_detail?.username} className="w-full outline-none text-[16px] font-medium text-gray-700" />
           </div>
         </div>
         <div>

@@ -6,6 +6,8 @@ import Header from "../../common/Header";
 
 const ProviderList = () => {
   const [providers, setProviders] = useState([]);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [providerToDelete, setProviderToDelete] = useState(null);
   const base_url = import.meta.env.VITE_API_KEY_Base_URL;
 
   // Fetch Providers
@@ -22,19 +24,27 @@ const ProviderList = () => {
     fetchProviders();
   }, []);
 
-  // Handle Delete Provider
-  const handleDelete = (id) => {
-    if (!window.confirm("Are you sure you want to delete this provider?")) return;
+  // Handle Delete Confirmation
+  const confirmDelete = (provider) => {
+    setProviderToDelete(provider);
+    setShowDeleteModal(true);
+  };
 
+  // Handle Delete Provider
+  const handleDelete = () => {
+    if (!providerToDelete) return;
+    
     axios
-      .delete(`${base_url}/admin/provider-remove/${id}`)
+      .delete(`${base_url}/admin/provider-remove/${providerToDelete._id}`)
       .then(() => {
-        setProviders((prev) => prev.filter((provider) => provider._id !== id));
+        setProviders((prev) => prev.filter((provider) => provider._id !== providerToDelete._id));
         toast.success("Provider deleted successfully!");
+        setShowDeleteModal(false);
       })
       .catch((err) => {
         console.error(err);
         toast.error("Failed to delete provider.");
+        setShowDeleteModal(false);
       });
   };
 
@@ -45,8 +55,8 @@ const ProviderList = () => {
       <section className="p-6">
         <h1 className="text-2xl font-semibold text-gray-800 mb-6">Providers</h1>
 
-        <div className="custom-scrollbar overflow-x-auto bg-white p-6 ">
-          <table className="w-full border-collapse rounded-t-[10px] overflow-hidden">
+        <div className="custom-scrollbar overflow-x-auto bg-white  ">
+          <table className="w-full border-collapse border-[1px] border-gray-200 overflow-hidden">
             <thead>
               <tr className="bg-[#4634FF] text-white">
                 <th className="p-3 text-left">Provider Name</th>
@@ -63,10 +73,11 @@ const ProviderList = () => {
                   </td>
                   <td className="p-3">
                     <button
-                      onClick={() => handleDelete(provider._id)}
-                      className="bg-red-600 text-white px-3 py-2 rounded-md hover:bg-red-700 transition"
+                      onClick={() => confirmDelete(provider)}
+                      className="text-white bg-red-500 px-[10px] py-[5px] rounded-[3px]  flex items-center space-x-1 gap-2"
                     >
                       <FaTrash />
+                      Delete
                     </button>
                   </td>
                 </tr>
@@ -82,6 +93,32 @@ const ProviderList = () => {
           </table>
         </div>
       </section>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 text-gray-700 rounded-lg max-w-md w-full">
+            <h3 className="text-xl font-semibold mb-4">Confirm Delete</h3>
+            <p className="mb-6">
+              Are you sure you want to delete <span className="font-bold">{providerToDelete?.providerName}</span>? This action cannot be undone.
+            </p>
+            <div className="flex justify-end space-x-4">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

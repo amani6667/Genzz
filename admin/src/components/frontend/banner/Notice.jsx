@@ -33,7 +33,7 @@ const Notice = () => {
     try {
       const res = await axios.post(`${base_url}/admin/add-notice`, { content },{
         headers: {
-             'Authorization': localStorage.getItem('token')
+             'Authorization': localStorage.getItem('genzz_token')
             },
       });
       setNotice(res.data.notice.content); // Update UI with new notice
@@ -65,7 +65,7 @@ const Notice = () => {
             </form>
 
             {notice && (
-              <div className="mt-4">
+              <div className="mt-4 text-gray-600">
                 <h2 className="text-xl font-semibold">Latest Notice</h2>
                 <p className="mt-2">{notice}</p>
               </div>

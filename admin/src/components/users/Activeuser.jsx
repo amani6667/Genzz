@@ -61,7 +61,7 @@ const Activeuser = () => {
       },[])
   const [searchQuery, setSearchQuery] = useState('');
   const filterusers = active_users.filter((user) =>
-    user.name.toLowerCase().includes(searchQuery.toLowerCase())
+    user.username.toLowerCase().includes(searchQuery.toLowerCase())
   );
   return (
     <div className=" w-full font-bai overflow-y-auto">
@@ -84,14 +84,14 @@ const Activeuser = () => {
                   </div>
                 </div>
                 <div className="overflow-x-auto">
-      <table className="w-full border-collapse shadow-xl bg-white border-[1px] border-[#eee] rounded-md overflow-hidden">
+      <table className="w-full border-collapse shadow-xl bg-white border-[1px] border-[#eee]  overflow-hidden">
         <thead>
           <tr className="bg-[#4634FF] text-white">
             <th className="py-3 px-4 text-left">User</th>
             <th className="py-3 px-4 text-left">Email-Mobile</th>
             <th className="py-3 px-4 text-left">Country</th>
             <th className="py-3 px-4 text-left">Joined At</th>
-            <th className="py-3 px-4 text-left">Balance</th>
+            <th className="py-3 px-4 text-left">Status</th>
             <th className="py-3 px-4 text-left">Status</th>
             <th className="py-3 px-4 text-left">Action</th>
           </tr>
@@ -104,6 +104,7 @@ const Activeuser = () => {
                 <br />
                 <span className="text-gray-600">{user.username}</span>
               </td>
+              
               <td className="py-3 px-4 text-gray-800">
                 <span>{user.email}</span>
                 <br />
@@ -116,21 +117,21 @@ const Activeuser = () => {
                 <span className="text-gray-600">  {moment(user?.createdAt).fromNow()}
                 </span>
               </td>
-              <td className="py-3 px-4 text-gray-800 font-[600]">৳{user?.balance}</td>
-              <td className="py-3 px-4 flex items-center space-x-2">
-                <td className="py-3 px-4 flex items-center space-x-2">
+                  <td className="py-3 px-4 flex items-center space-x-2">
                 <StatusSwitch
                       status={user.status}
                       onChange={(newStatus) => handleStatusChange(data, newStatus)}
                     />
                 </td>
-                <NavLink to={`/users/user-detail/${user._id}`}>
+              <td className="py-3 px-4 text-gray-800 font-[600]">৳{user?.balance}</td>
+            
+                <td className="py-3 px-4 flex items-center space-x-2">
+                     <NavLink to={`/users/user-detail/${user._id}`}>
                 <button className="flex items-center border-[1px] border-blue-500 px-[10px] py-[4px] rounded-[5px] text-blue-500 hover:text-blue-600">
                   <RiComputerLine className="mr-1" /> Details
                 </button>
                 </NavLink>
-             
-              </td> 
+                </td>
               {/* <td className="py-3 px-4 text-gray-800">{game.userSelect}</td>
               <td className="py-3 px-4 text-gray-800">
                 {Array.isArray(game.result) ? game.result.join(", ") : game.result}

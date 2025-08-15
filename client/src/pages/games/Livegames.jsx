@@ -1,4 +1,4 @@
-import React from 'react';
+import React,{useEffect,useState} from 'react';
 import Header from '../../components/header/Header';
 import Sidebar from '../../components/sidebar/Sidebar';
 import BannerSlider from '../../components/banner/BannerSlider';
@@ -8,15 +8,27 @@ import Hotgamescard from '../../components/gamespart/Hotgamescard';
 import Livegamespart from '../../components/gamespart/live/Livegamespart';
 
 const Livegames = () => {
+    const [showPopup, setShowPopup] = useState(false);
+    const [activeLeftTab, setActiveLeftTab] = useState('আমার অ্যাকাউন্ট');
   return (
     <section className="min-h-screen font-anek bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
       {/* Header with dark glass morphism effect */}
-      <Header className="bg-gray-900/90 backdrop-blur-sm border-b border-gray-700 " />
-      
+       <Header 
+        className="bg-gray-900/90 backdrop-blur-sm border-b border-gray-700"
+        showPopup={showPopup}
+        setShowPopup={setShowPopup}
+        activeLeftTab={activeLeftTab}
+        setActiveLeftTab={setActiveLeftTab}
+      />
       <div className="flex">
         {/* Fixed Sidebar with dark glass morphism */}
         <div className="hidden md:block  ">
-          <Sidebar />
+         <Sidebar 
+            showPopup={showPopup}
+            setShowPopup={setShowPopup}
+            activeLeftTab={activeLeftTab}
+            setActiveLeftTab={setActiveLeftTab}
+          />
         </div>
 
         {/* Scrollable Content */}

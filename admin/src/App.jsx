@@ -1,4 +1,4 @@
-import { Route, Routes, useLocation,Navigate } from "react-router-dom";
+import { Route, Routes, useLocation, Navigate, Outlet } from "react-router-dom";
 import Sidebar from "./components/common/Sidebar";
 import OverviewPage from "./pages/OverviewPage";
 import ProductsPage from "./pages/ProductsPage";
@@ -56,103 +56,190 @@ import Newgame from "./components/gameapi/Newgame";
 import Allgames from "./components/gameapi/Allgames";
 import Newcategory from "./components/category/Newcategory";
 import Categorylist from "./components/category/Categorylist";
+import { useEffect, useState } from "react";
+import axios from "axios";
+import NotFound from "./pages/Notfound";
+
+// Protected Route Component
+const ProtectedRoute = ({ children }) => {
+  const admin = JSON.parse(localStorage.getItem("genzz_admin"));
+  const token = localStorage.getItem("genzz_token");
+  
+  if (!admin || !token) {
+    return <Navigate to="/admin-login" replace />;
+  }
+
+  return children ? children : <Outlet />;
+};
+
+// Public Only Route Component (for login page)
+const PublicOnlyRoute = ({ children }) => {
+  const admin = JSON.parse(localStorage.getItem("genzz_admin"));
+  const token = localStorage.getItem("genzz_token");
+  
+  if (admin && token) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return children;
+};
+
+// Admin Layout Component (for pages with sidebar)
+const AdminLayout = () => {
+  const [adminInfo, setAdminInfo] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const base_url = import.meta.env.VITE_API_KEY_Base_URL;
+
+  useEffect(() => {
+    const fetchAdminInfo = async () => {
+      try {
+        const admin = JSON.parse(localStorage.getItem("genzz_admin"));
+        const response = await axios.get(`${base_url}/auth/admin-info/${admin._id}`, {
+          headers: {
+            Authorization: `Bearer ${admin.token}`
+          }
+        });
+        console.log(response)
+        if (response.data.success) {
+          setAdminInfo(response.data.data);
+        } else {
+          throw new Error(response.data.message || "Failed to fetch admin info");
+        }
+      } catch (err) {
+        console.error("Error fetching admin info:", err);
+        setError(err.message);
+        // If there's an error (like unauthorized), clear local storage and redirect to login
+        localStorage.removeItem("genzz_admin");
+        window.location.href = "/admin-login";
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAdminInfo();
+  }, []);
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="flex items-center justify-center h-screen text-red-500">{error}</div>;
+  }
+
+  if (!adminInfo) {
+    return <Navigate to="/admin-login" replace />;
+  }
+
+  return (
+    <div className="flex h-screen text-gray-100 overflow-hidden w-full">
+      <Sidebar adminInfo={adminInfo} />
+      <div className="flex-1 overflow-auto">
+        <Outlet />
+      </div>
+    </div>
+  );
+};
 
 function App() {
-	const location = useLocation();
-	const hideSidebar = location.pathname === "/hobet-admin-login";
-	const isAdminAuthenticated = localStorage.getItem("admin");
-	return (
-		<div className='flex h-screen  text-gray-100 overflow-hidden'>
-			{/* BG */}
-			{/* <div className='fixed inset-0 z-0'>
-				<div className='absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 opacity-80' />
-				<div className='absolute inset-0 backdrop-blur-sm' />
-			</div> */}
+  const location = useLocation();
+  const hideSidebar = location.pathname === "/admin-login";
 
-			{!hideSidebar && <Sidebar />}
-
+  return (
+    <div className="flex h-screen text-gray-100 overflow-hidden">
       <Routes>
-  <Route path="/hobet-admin-login" element={<AdminLogin />} />
-  
-    <>
-      <Route path="/" element={<OverviewPage />} />
-      <Route path="/products" element={<ProductsPage />} />
-      <Route path="/users" element={<UsersPage />} />
-      <Route path="/sales" element={<SalesPage />} />
-      <Route path="/orders" element={<OrdersPage />} />
-        {/*----------------frontend-------------------------*/}
-      <Route path="/add-banner" element={<Addbanner />} />
-      <Route path="/banner-list" element={<Bannerlist />} />
-      <Route path="/notice" element={<Notice />} />
-      <Route path="/add-provider" element={<Addprovider />} />
-      <Route path="/provider-list" element={<Providerlist />} />
-        {/*----------------frontend-------------------------*/}
-      <Route path="/analytics" element={<AnalyticsPage />} />
-      <Route path="/games" element={<GamesTable />} />
-      <Route path="/games/game-log" element={<Gamelogs />} />
-      <Route path="/games/game-details" element={<Gamesdetails />} />
-      {/* ---------------game-api------------------------- */}
-      <Route path="/game-api/add-new-game" element={<Newgame />} />
-      <Route path="/game-api/all-games" element={<Allgames />} />
-      <Route path="/game-api/new-category" element={<Newcategory />} />
-      <Route path="/game-api/category-list" element={<Categorylist />} />
+        {/* Public routes */}
+        <Route path="/admin-login" element={
+          <PublicOnlyRoute>
+            <AdminLogin />
+          </PublicOnlyRoute>
+        } />
 
-      {/* ----------------------users----------------------------- */}
-      <Route path="/users/all-user" element={<Alluser />} />
-      <Route path="/users/send-notification" element={<NotificationPage />} />
-      <Route path="/users/active-user" element={<Activeuser />} />
-      <Route path="/users/banned-user" element={<Banneduser />} />
-      <Route path="/users/user-detail/:id" element={<UserDetail />} />
-      <Route path="/users/banned-user-detail/:id" element={<Banneduserdetail />} />
+        {/* Protected routes with admin layout */}
+        <Route element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
+          <Route path="/dashboard" element={<OverviewPage />} />
+          <Route path="/products" element={<ProductsPage />} />
+          <Route path="/users" element={<UsersPage />} />
+          <Route path="/sales" element={<SalesPage />} />
+          <Route path="/orders" element={<OrdersPage />} />
+          
+          {/* Frontend */}
+          <Route path="/add-banner" element={<Addbanner />} />
+          <Route path="/banner-list" element={<Bannerlist />} />
+          <Route path="/notice" element={<Notice />} />
+          <Route path="/add-provider" element={<Addprovider />} />
+          <Route path="/provider-list" element={<Providerlist />} />
+          
+          <Route path="/analytics" element={<AnalyticsPage />} />
+          <Route path="/games" element={<GamesTable />} />
+          <Route path="/games/game-log" element={<Gamelogs />} />
+          <Route path="/games/game-details" element={<Gamesdetails />} />
+          
+          {/* Game API */}
+          <Route path="/game-api/add-new-game" element={<Newgame />} />
+          <Route path="/game-api/all-games" element={<Allgames />} />
+          <Route path="/game-api/new-category" element={<Newcategory />} />
+          <Route path="/game-api/category-list" element={<Categorylist />} />
 
-      {/* ----------------------users----------------------------- */}
+          {/* Users */}
+          <Route path="/users/all-user" element={<Alluser />} />
+          <Route path="/users/send-notification" element={<NotificationPage />} />
+          <Route path="/users/active-user" element={<Activeuser />} />
+          <Route path="/users/banned-user" element={<Banneduser />} />
+          <Route path="/users/user-detail/:id" element={<UserDetail />} />
+          <Route path="/users/banned-user-detail/:id" element={<Banneduserdetail />} />
 
-      {/* ---------------------deposit-------------------------- */}
-      <Route path="/deposits/failed-deposit" element={<Faileddeposit />} />
-      <Route path="/deposits/successful-deposit" element={<Successdeposit />} />
-      <Route path="/deposits/all-deposits" element={<Alldeposit />} />
-      <Route path="/deposits/pending-deposit-details/:id" element={<DepositRequest />} />
-      <Route path="/deposits/single-deposit-history/:id" element={<Singledeposithistory />} />
-      
-      {/* ---------------------deposit-------------------------- */}
+          {/* Deposit */}
+          <Route path="/deposits/failed-deposit" element={<Faileddeposit />} />
+          <Route path="/deposits/successful-deposit" element={<Successdeposit />} />
+          <Route path="/deposits/all-deposits" element={<Alldeposit />} />
+          <Route path="/deposits/pending-deposit-details/:id" element={<DepositRequest />} />
+          <Route path="/deposits/single-deposit-history/:id" element={<Singledeposithistory />} />
+          
+          {/* Withdraw */}
+          <Route path="/withdraw/single-withdraw-history/:id" element={<SingleWithdrawHistory />} />
+          <Route path="/withdraw/pending-withdraw-details/:id" element={<Withdrawdetails />} />
+          <Route path="/withdrawals/pending-withdrawal" element={<Pendingwithdraw />} />
+          <Route path="/withdrawals/success-withdrawal" element={<Successwithdraw />} />
+          <Route path="/withdrawals/approved-withdrawal" element={<Approvedwithdraw />} />
+          <Route path="/withdrawals/rejected-withdrawal" element={<Rejectedwithdraw />} />
+          <Route path="/withdrawals/all-withdrawals" element={<Allwithdraw />} />
+          
+          {/* Report */}
+          <Route path="/report/login/history" element={<Loginhistory />} />
+          <Route path="/report/nptification/history" element={<Allnotifications />} />
+          
+          {/* Moderator */}
+          <Route path="/moderator/all-admins" element={<Alladmin />} />
+          <Route path="/moderator/all-super-admins" element={<Superadmin />} />
+          <Route path="/moderator/pending-admins" element={<Pendingadmin />} />
+          <Route path="/moderator/create-user" element={<Createuser />} />
+          
+          {/* Referal */}
+          <Route path="/referal/add-referal" element={<Referal/>} />
 
-      {/* --------------------------------withdraw----------------------------- */}
-      <Route path="/withdraw/single-withdraw-history/:id" element={<SingleWithdrawHistory />} />
-      <Route path="/withdraw/pending-withdraw-details/:id" element={<Withdrawdetails />} />
-      <Route path="/withdrawals/pending-withdrawal" element={<Pendingwithdraw />} />
-      <Route path="/withdrawals/success-withdrawal" element={<Successwithdraw />} />
-      <Route path="/withdrawals/approved-withdrawal" element={<Approvedwithdraw />} />
-      <Route path="/withdrawals/rejected-withdrawal" element={<Rejectedwithdraw />} />
-      <Route path="/withdrawals/all-withdrawals" element={<Allwithdraw />} />
-      {/* ----------------------report-------------------------- */}
-      <Route path="/report/login/history" element={<Loginhistory />} />
-      <Route path="/report/nptification/history" element={<Allnotifications />} />
-      
-      {/* ----------------------report-------------------------- */}
-      {/* ------------------moderator-------------------- */}
-      <Route path="/moderator/all-admins" element={<Alladmin />} />
-      <Route path="/moderator/all-super-admins" element={<Superadmin />} />
-      <Route path="/moderator/pending-admins" element={<Pendingadmin />} />
-      <Route path="/moderator/create-user" element={<Createuser />} />
-      {/* --------------------referal--------------------- */}
-      <Route path="/referal/add-referal" element={<Referal/>} />
+          {/* Settings */}
+          <Route path="/supports/pending-support" element={<Pendingticket />} />
+          <Route path="/reports/transaction-history" element={<TransactionLogs />} />
+          <Route path="/settings" element={<Setting />} />
+          <Route path="/request-reports" element={<Reportsandrequest />} />
+          <Route path="/settings/general-settings" element={<Generalsettings />} />
+          <Route path="/settings/logo-icon" element={<LogoFaviconUploader />} />
+          <Route path="/settings/system-config" element={<Configuration />} />
+          <Route path="/settings/seo-config" element={<SEOConfig />} />
+          <Route path="/settings/notification" element={<NotificationTemplates />} />
+          <Route path="/settings/robot-text" element={<RobotsTxtForm />} />
+        </Route>
 
-      {/* ---------settings----------------------------- */}
-      <Route path="/supports/pending-support" element={<Pendingticket />} />
-      <Route path="/reports/transaction-history" element={<TransactionLogs />} />
-      <Route path="/settings" element={<Setting />} />
-      <Route path="/request-reports" element={<Reportsandrequest />} />
-      <Route path="/settings/general-settings" element={<Generalsettings />} />
-      <Route path="/settings/logo-icon" element={<LogoFaviconUploader />} />
-      <Route path="/settings/system-config" element={<Configuration />} />
-      <Route path="/settings/seo-config" element={<SEOConfig />} />
-      <Route path="/settings/notification" element={<NotificationTemplates />} />
-      <Route path="/settings/robot-text" element={<RobotsTxtForm />} />
-    </>
-</Routes>
-
-		</div>
-	);
+        {/* Redirects */}
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        
+        {/* Not found route */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </div>
+  );
 }
 
 export default App;

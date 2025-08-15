@@ -732,7 +732,19 @@ router.post('/admin-registration', async (req, res) => {
         });
     }
 });
-
+// ------------check-admin-found-or-not--------------------
+router.get("/admin-info/:id",async(req,res)=>{
+    try {
+        const admininfo=await admin_model.findById({_id:req.params.id});
+        if(!admininfo){
+               return res.send({success:false,message:"Admin did not find!"})
+        }
+        console.log(admininfo)
+        res.send({success:true,data:admininfo})
+    } catch (error) {
+        console.log(error)
+    }
+})
 /**
  * @route PUT /auth/update-profile
  * @desc Update user profile

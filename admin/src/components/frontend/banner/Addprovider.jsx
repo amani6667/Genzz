@@ -46,7 +46,7 @@ export default function AddProvider() {
       await axios.post(`${base_url}/admin/add-provider`, formData, {
         headers: { 
           "Content-Type": "multipart/form-data",
-          'Authorization': localStorage.getItem('token')
+          'Authorization': localStorage.getItem('genzz_token')
         }
       });
 
@@ -76,7 +76,7 @@ export default function AddProvider() {
                 type="text"
                 value={providerName}
                 onChange={(e) => setProviderName(e.target.value)}
-                className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 text-gray-500 focus:ring-blue-500"
                 placeholder="Enter provider name"
               />
             </div>

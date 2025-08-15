@@ -567,7 +567,6 @@ const Header = ({setShowPopup, setActiveLeftTab, showPopup, activeLeftTab }) => 
                 setProfileDropdownOpen(false);
             }
         },
-        { icon: <FaCog className="text-blue-400" />, label: 'সেটিংস', path: '/settings' },
         { icon: <FaSignOutAlt className="text-red-400" />, label: 'লগ আউট', path: '/logout', onClick: handleLogout }
     ];
 
@@ -738,34 +737,27 @@ const Header = ({setShowPopup, setActiveLeftTab, showPopup, activeLeftTab }) => 
                 </div>
             </div>
 
-            <div className="fixed right-4 bottom-24 md:bottom-6 z-[9998] flex flex-col space-y-3">
-                <a href="#" className="relative group">
-                    <div className="bg-[#0088cc] hover:bg-[#00a2e6] text-white p-3 rounded-full shadow-[0_4px_0_#006699] hover:shadow-[0_6px_0_#006699] active:shadow-[0_2px_0_#006699] active:translate-y-[2px] transition-all duration-150 flex items-center justify-center w-12 h-12">
-                        <FaTelegram className="text-xl" />
-                    </div>
-                    <span className="absolute right-full top-1/2 transform -translate-y-1/2 mr-2 bg-gray-800 text-white text-xs font-medium px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap border border-gray-700">
-                        Telegram
-                    </span>
-                </a>
+      <div className="fixed right-4 bottom-40 md:bottom-40 z-[9998] flex flex-col space-y-3">
+    <a href="#" className="relative group">
+        <div className="bg-[#0088cc] hover:bg-[#00a2e6] text-white p-3 rounded-full shadow-[0_4px_0_#006699] hover:shadow-[0_6px_0_#006699] active:shadow-[0_2px_0_#006699] active:translate-y-[2px] transition-all duration-150 flex items-center justify-center w-12 h-12">
+            <FaTelegram className="text-xl" />
+        </div>
+        <span className="absolute right-full top-1/2 transform -translate-y-1/2 mr-2 bg-gray-800 text-white text-xs font-medium px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap border border-gray-700">
+            Telegram
+        </span>
+    </a>
 
-                <a href="#" className="relative group">
-                    <div className="bg-[#3b5998] hover:bg-[#4c70ba] text-white p-3 rounded-full shadow-[0_4px_0_#2d4373] hover:shadow-[0_6px_0_#2d4373] active:shadow-[0_2px_0_#2d4373] active:translate-y-[2px] transition-all duration-150 flex items-center justify-center w-12 h-12">
-                        <FaFacebookF className="text-xl" />
-                    </div>
-                    <span className="absolute right-full top-1/2 transform -translate-y-1/2 mr-2 bg-gray-800 text-white text-xs font-medium px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap border border-gray-700">
-                        Facebook
-                    </span>
-                </a>
+    <a href="#" className="relative group">
+        <div className="bg-[#3b5998] hover:bg-[#4c70ba] text-white p-3 rounded-full shadow-[0_4px_0_#2d4373] hover:shadow-[0_6px_0_#2d4373] active:shadow-[0_2px_0_#2d4373] active:translate-y-[2px] transition-all duration-150 flex items-center justify-center w-12 h-12">
+            <FaFacebookF className="text-xl" />
+        </div>
+        <span className="absolute right-full top-1/2 transform -translate-y-1/2 mr-2 bg-gray-800 text-white text-xs font-medium px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap border border-gray-700">
+            Facebook
+        </span>
+    </a>
 
-                <a href="#" className="relative group">
-                    <div className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white p-3 rounded-full shadow-[0_4px_0_#4c1d95] hover:shadow-[0_6px_0_#4c1d95] active:shadow-[0_2px_0_#4c1d95] active:translate-y-[2px] transition-all duration-150 flex items-center justify-center w-12 h-12">
-                        <FaHeadset className="text-xl" />
-                    </div>
-                    <span className="absolute right-full top-1/2 transform -translate-y-1/2 mr-2 bg-gray-800 text-white text-xs font-medium px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap border border-gray-700">
-                        Support
-                    </span>
-                </a>
-            </div>
+
+</div>
 
             <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-gray-800 dark:bg-gray-900 border-t border-gray-700 dark:border-gray-700 z-50 shadow-xl">
                 <div className="flex relative">

@@ -56,7 +56,7 @@ const Allgames = () => {
   // Fetch categories
   const fetchCategories = async () => {
     try {
-      const response = await fetch(`${base_url}/games/categories`);
+      const response = await fetch(`${base_url}/admin/games/categories`);
       if (!response.ok) throw new Error('Failed to fetch categories');
       const data = await response.json();
       setCategories(data.data);
@@ -146,11 +146,11 @@ const Allgames = () => {
     <div className="w-full font-bai min-h-screen overflow-y-auto bg-gray-50">
       <Header />
       <section className="p-4 md:p-6">
-        <div className="bg-white rounded-xl shadow-md p-6">
+        <div className=" p-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
             <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Game Management</h1>
             <NavLink 
-              to="/games/add"
+              to="/game-api/add-new-game"
               className="mt-4 md:mt-0 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm transition duration-200 flex items-center"
             >
               <FaEdit className="mr-2" /> Add New Game
@@ -158,7 +158,7 @@ const Allgames = () => {
           </div>
           
           {/* Filters */}
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
+          <div className="flex flex-col md:flex-row gap-4 mb-6 text-gray-700">
             <div className="relative flex-grow">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <FiSearch className="text-gray-400" />
@@ -173,7 +173,7 @@ const Allgames = () => {
               />
             </div>
             
-            <select
+            {/* <select
               name="category"
               value={filters.category}
               onChange={handleFilterChange}
@@ -183,7 +183,7 @@ const Allgames = () => {
               {categories.map(category => (
                 <option key={category} value={category}>{category}</option>
               ))}
-            </select>
+            </select> */}
           </div>
 
           {/* Error message */}
@@ -208,17 +208,17 @@ const Allgames = () => {
           ) : (
             <>
               {/* Games table */}
-              <div className="overflow-x-auto border border-gray-200 rounded-lg">
+              <div className="overflow-x-auto border border-gray-200 ">
                 <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-blue-600 text-white">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Game Name</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Provider</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Game ID</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                      <th className="px-6 py-3 text-left text-xs md:text-sm font-medium  uppercase tracking-wider">Image</th>
+                      <th className="px-6 py-3 text-left text-xs md:text-sm font-medium  uppercase tracking-wider">Game Name</th>
+                      <th className="px-6 py-3 text-left text-xs md:text-sm font-medium  uppercase tracking-wider">Provider</th>
+                      <th className="px-6 py-3 text-left text-xs md:text-sm font-medium  uppercase tracking-wider">Game ID</th>
+                      <th className="px-6 py-3 text-left text-xs md:text-sm font-medium  uppercase tracking-wider">Category</th>
+                      <th className="px-6 py-3 text-left text-xs md:text-sm font-medium  uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-3 text-left text-xs md:text-sm font-medium  uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">

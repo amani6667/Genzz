@@ -11,6 +11,7 @@ import axios from "axios"
 import { CgController } from "react-icons/cg";
 import { HiCode } from "react-icons/hi";
 import { HiOutlineShare } from "react-icons/hi";
+import logo from "../../assets/logo.png"
 const Sidebar = () => {
 	const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 	const [openSubmenus, setOpenSubmenus] = useState({});
@@ -51,7 +52,7 @@ const Sidebar = () => {
 		name: "Overview",
 		icon: BarChart2,
 		color: "#6366f1",
-		href: "/",
+		href: "/dashboard",
 	},
 	{
 		name: "Frontend",
@@ -168,12 +169,7 @@ const Sidebar = () => {
 					</motion.button>
 					<div className='py-4 px-4 sm:px-6 lg:px-8'>
 			<div className="relative text-[30px] font-extrabold flex items-center tracking-wide ">
-        <span className="text-bg5 drop-shadow-lg">H</span>
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mx-2 animate-spin">
-        <circle cx="12" cy="12" r="10" stroke="#FFC312" strokeWidth="2" />
-        <polygon points="10,8 14,12 10,16" fill="#F79F1F" />
-        </svg>
-        <span className="text-white drop-shadow-lg">BET</span>
+        <img src={logo} alt="" />
       </div>
 			</div>
 				</div>

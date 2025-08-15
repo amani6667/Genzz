@@ -57,7 +57,7 @@ const Alluser = () => {
       },[])
   const [searchQuery, setSearchQuery] = useState('');
   const filterusers = active_users.filter((user) =>
-    user.name.toLowerCase().includes(searchQuery.toLowerCase())
+    user.username.toLowerCase().includes(searchQuery.toLowerCase())
   );
   return (
     <div className=" w-full font-bai overflow-y-auto">
