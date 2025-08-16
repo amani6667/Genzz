@@ -5,12 +5,21 @@ const Schema = mongoose.Schema;
 // Configuration
 const SALT_WORK_FACTOR = 10;
 const PASSWORD_MIN_LENGTH = 6;
-const OTP_EXPIRY_MINUTES = 5; // OTP expires after 5 minutes
+const OTP_EXPIRY_MINUTES = 5;
 const BONUS_CONFIG = {
   BONUS_EXPIRY_DAYS: 30,
-  FIRST_DEPOSIT_BONUS_RATE: 0.03, // 3%
-  SPECIAL_BONUS_RATE: 1.5, // 150%
-  WAGERING_REQUIREMENT: 30 // 30x
+  FIRST_DEPOSIT_BONUS_RATE: 0.03,
+  SPECIAL_BONUS_RATE: 1.5,
+  WAGERING_REQUIREMENT: 30,
+  DEPOSIT_WAGERING_REQUIREMENT: 3,
+  MINIMUM_REMAINING_WAGER: 1,
+  WITHDRAWAL_COMMISSION_RATE: 0.2,
+  NEW_USER_ACCOUNT_AGE_DAYS: 3,
+  MIN_DEPOSIT_AMOUNT: 100,
+  MAX_DEPOSIT_AMOUNT: 30000,
+  MIN_WITHDRAWAL_AMOUNT: 300,
+  MAX_WITHDRAWALS_PER_DAY: 3,
+  DAILY_WITHDRAWAL_LIMIT: 50000
 };
 
 const UserSchema = new Schema({
@@ -140,7 +149,7 @@ const UserSchema = new Schema({
     },
     dailyWithdrawalLimit: {
         type: Number,
-        default: 50000 // 50,000 BDT default daily limit
+        default: BONUS_CONFIG.DAILY_WITHDRAWAL_LIMIT
     },
     withdrawalCountToday: {
         type: Number,
@@ -225,7 +234,7 @@ const UserSchema = new Schema({
     otp: {
         code: String,
         expiresAt: Date,
-        purpose: String, // 'password-reset', 'password-change', 'email-verification', etc.
+        purpose: String,
         verified: { type: Boolean, default: false }
     },
     resetPasswordToken: String,
@@ -361,7 +370,7 @@ const UserSchema = new Schema({
         amount: {
             type: Number,
             required: true,
-            min: 100
+            min: BONUS_CONFIG.MIN_DEPOSIT_AMOUNT
         },
         status: { 
             type: String, 
@@ -399,7 +408,7 @@ const UserSchema = new Schema({
         amount: {
             type: Number,
             required: true,
-            min: 300
+            min: BONUS_CONFIG.MIN_WITHDRAWAL_AMOUNT
         },
         netAmount: {
             type: Number,
@@ -464,13 +473,11 @@ const UserSchema = new Schema({
             default: Date.now
         }
     }]
-
 }, {
     timestamps: true,
     toJSON: {
         virtuals: true,
         transform: function(doc, ret) {
-            // Remove sensitive information
             delete ret.password;
             delete ret.transactionPassword;
             delete ret.moneyTransferPassword;
@@ -494,63 +501,62 @@ UserSchema.virtual('accountAgeInDays').get(function() {
 });
 
 UserSchema.virtual('isNewUser').get(function() {
-    return this.accountAgeInDays < 3;
+    return this.accountAgeInDays < BONUS_CONFIG.NEW_USER_ACCOUNT_AGE_DAYS;
 });
 
 UserSchema.virtual('availableBalance').get(function() {
     let available = this.balance || 0;
-    
-    // If user has bonus and hasn't cancelled it
-    if (this.bonusBalance > 0) {
-        return 0; // Can't withdraw from main balance until bonus is cleared
-    }
-    
-    // Check wagering requirements
-    if (this.total_deposit > 0) {
-        const wageringRequirement = this.total_deposit * 3;
-        const wageringCompleted = this.totalWagered || 0;
-        
-        if (wageringCompleted < wageringRequirement) {
-            // If they want to withdraw without completing, apply 20% commission
-            return available * 0.8; // 20% commission
-        }
-    }
-    
+    if (this.bonusBalance > 0) return 0;
     return available;
 });
 
-UserSchema.virtual('fullProfile').get(function() {
+UserSchema.virtual('withdrawableAmount').get(function() {
+    let amount = this.balance || 0;
+    
+    if (this.bonusBalance > 0) return 0;
+    
+    const requiredWager = this.total_deposit * BONUS_CONFIG.DEPOSIT_WAGERING_REQUIREMENT;
+    const completedWager = this.totalWagered || 0;
+    const remainingWager = Math.max(0, requiredWager - completedWager);
+    const minRequired = this.total_deposit * BONUS_CONFIG.MINIMUM_REMAINING_WAGER;
+    
+    if (remainingWager > minRequired) {
+        return amount * (1 - BONUS_CONFIG.WITHDRAWAL_COMMISSION_RATE);
+    }
+    
+    return amount;
+});
+
+UserSchema.virtual('wageringStatus').get(function() {
+    const required = this.total_deposit * BONUS_CONFIG.DEPOSIT_WAGERING_REQUIREMENT;
+    const completed = this.totalWagered || 0;
+    const remaining = Math.max(0, required - completed);
+    const minRequired = this.total_deposit * BONUS_CONFIG.MINIMUM_REMAINING_WAGER;
+    
     return {
-        username: this.username,
-        email: this.email,
-        phone: this.phone,
-        balance: this.balance,
-        bonusBalance: this.bonusBalance,
-        status: this.status,
-        role: this.role,
-        totalDeposit: this.total_deposit,
-        totalWithdraw: this.total_withdraw
+        required,
+        completed,
+        remaining,
+        minRequired,
+        isCompleted: remaining <= minRequired,
+        commissionRate: remaining > minRequired ? BONUS_CONFIG.WITHDRAWAL_COMMISSION_RATE : 0
     };
 });
 
 // ========== PRE-SAVE HOOKS ==========
 UserSchema.pre('save', async function(next) {
-    // Generate player_id if not set
     if (!this.player_id) {
         this.player_id = 'PL' + Math.random().toString(36).substr(2, 8).toUpperCase();
     }
 
-    // Generate referral code if not set
     if (!this.referralCode) {
         this.referralCode = 'REF' + Math.random().toString(36).substr(2, 6).toUpperCase();
     }
 
-    // Hash passwords if modified
     if (this.isModified('password')) {
         const salt = await bcrypt.genSalt(SALT_WORK_FACTOR);
         this.password = await bcrypt.hash(this.password, salt);
         
-        // Store password in history
         if (this.passwordHistory) {
             this.passwordHistory.push({
                 password: this.password,
@@ -563,7 +569,6 @@ UserSchema.pre('save', async function(next) {
             }];
         }
         
-        // Keep only last 5 passwords
         if (this.passwordHistory.length > 5) {
             this.passwordHistory = this.passwordHistory.slice(-5);
         }
@@ -582,7 +587,6 @@ UserSchema.pre('save', async function(next) {
         this.isMoneyTransferPasswordSet = true;
     }
 
-    // Reset daily withdrawal count if it's a new day
     if (this.isModified('lastWithdrawalDate')) {
         const today = new Date().toDateString();
         const lastWithdrawalDay = this.lastWithdrawalDate ? new Date(this.lastWithdrawalDate).toDateString() : null;
@@ -595,121 +599,147 @@ UserSchema.pre('save', async function(next) {
     next();
 });
 
-// ========== METHODS ==========
-// Verify password
-UserSchema.methods.verifyPassword = async function(candidatePassword) {
-    return await bcrypt.compare(candidatePassword, this.password);
-};
-
-// Verify transaction password
-UserSchema.methods.verifyTransactionPassword = async function(candidatePassword) {
-    if (!this.transactionPassword) return false;
-    return await bcrypt.compare(candidatePassword, this.transactionPassword);
-};
-
-// Verify money transfer password
-UserSchema.methods.verifyMoneyTransferPassword = async function(candidatePassword) {
-    if (!this.moneyTransferPassword) return false;
-    return await bcrypt.compare(candidatePassword, this.moneyTransferPassword);
-};
-
-// Set money transfer password
-UserSchema.methods.setMoneyTransferPassword = async function(newPassword) {
-    const salt = await bcrypt.genSalt(SALT_WORK_FACTOR);
-    this.moneyTransferPassword = await bcrypt.hash(newPassword, salt);
-    this.isMoneyTransferPasswordSet = true;
-    return this.save();
-};
-
-// Update last login
-UserSchema.methods.updateLastLogin = async function() {
-    this.last_login = Date.now();
-    this.login_count += 1;
-    if (this.first_login) this.first_login = false;
-    return this.save();
-};
-
-// Generate OTP for password change
-UserSchema.methods.generatePasswordChangeOTP = function() {
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
-    const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
+// ========== WITHDRAWAL METHODS ==========
+UserSchema.methods.canWithdraw = function(amount) {
+    if (this.bonusBalance > 0) {
+        return {
+            canWithdraw: false,
+            reason: "Active bonus balance must be cleared first"
+        };
+    }
     
-    this.otp = {
-        code: otpCode,
-        expiresAt: expiresAt,
-        purpose: 'password-change',
-        verified: false
+    if (amount > this.balance) {
+        return {
+            canWithdraw: false,
+            reason: "Insufficient balance"
+        };
+    }
+    
+    const status = this.wageringStatus;
+    
+    if (status.remaining > status.minRequired) {
+        return {
+            canWithdraw: true,
+            reason: "Withdrawal allowed with 20% commission",
+            commission: amount * BONUS_CONFIG.WITHDRAWAL_COMMISSION_RATE,
+            netAmount: amount * (1 - BONUS_CONFIG.WITHDRAWAL_COMMISSION_RATE)
+        };
+    }
+    
+    return {
+        canWithdraw: true,
+        reason: "Withdrawal allowed",
+        commission: 0,
+        netAmount: amount
     };
-    
-    return this.save();
 };
 
-// Verify OTP for password change
-UserSchema.methods.verifyPasswordChangeOTP = async function(otpCode) {
-    if (!this.otp || this.otp.purpose !== 'password-change') {
-        throw new Error('No active password change OTP');
+UserSchema.methods.createWithdrawal = async function({ method, amount, accountNumber }) {
+    if (amount < BONUS_CONFIG.MIN_WITHDRAWAL_AMOUNT) {
+        throw new Error(`Minimum withdrawal amount is ${BONUS_CONFIG.MIN_WITHDRAWAL_AMOUNT} BDT`);
     }
-    
-    if (this.otp.expiresAt < new Date()) {
-        throw new Error('OTP has expired');
+
+    const withdrawalCheck = this.canWithdraw(amount);
+    if (!withdrawalCheck.canWithdraw) {
+        throw new Error(withdrawalCheck.reason);
     }
+
+    const today = new Date().toDateString();
+    const lastWithdrawalDay = this.lastWithdrawalDate ? new Date(this.lastWithdrawalDate).toDateString() : null;
     
-    if (this.otp.code !== otpCode) {
-        throw new Error('Invalid OTP');
+    if (lastWithdrawalDay && today === lastWithdrawalDay && this.withdrawalCountToday >= BONUS_CONFIG.MAX_WITHDRAWALS_PER_DAY) {
+        throw new Error(`Maximum ${BONUS_CONFIG.MAX_WITHDRAWALS_PER_DAY} withdrawals allowed per day`);
     }
+
+    const withdrawal = {
+        method,
+        amount,
+        netAmount: withdrawalCheck.netAmount,
+        accountNumber,
+        status: 'pending',
+        orderId: `WD-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        commissionApplied: withdrawalCheck.commission > 0,
+        commissionAmount: withdrawalCheck.commission
+    };
+
+    this.withdrawHistory.push(withdrawal);
+    this.withdrawalCountToday += 1;
+    this.lastWithdrawalDate = new Date();
+    this.balance -= amount;
     
-    this.otp.verified = true;
+    this.transactionHistory.push({
+        type: 'withdrawal',
+        amount: amount,
+        balanceBefore: this.balance + amount,
+        balanceAfter: this.balance,
+        description: `Withdrawal via ${method}`,
+        referenceId: withdrawal.orderId
+    });
+
     await this.save();
-    return true;
+    return withdrawal;
 };
 
-// Change password with OTP verification
-UserSchema.methods.changePasswordWithOTP = async function(newPassword, otpCode) {
-    // Verify OTP first
-    await this.verifyPasswordChangeOTP(otpCode);
+// ========== BONUS SYSTEM METHODS ==========
+UserSchema.methods.isEligibleForFirstDepositBonus = function() {
+    return !this.bonusInfo.firstDepositBonusClaimed && this.total_deposit === 0;
+};
+
+UserSchema.methods.isEligibleForSpecialBonus = function() {
+    const isNewUser = this.accountAgeInDays < BONUS_CONFIG.NEW_USER_ACCOUNT_AGE_DAYS;
+    const hasNoActiveBonuses = this.bonusInfo.activeBonuses.length === 0;
+    return isNewUser && hasNoActiveBonuses && (this.total_deposit === 0 || this.total_deposit < BONUS_CONFIG.MAX_DEPOSIT_AMOUNT);
+};
+
+UserSchema.methods.calculateBonusAmount = function(depositAmount, bonusType) {
+    if (bonusType === 'first_deposit') {
+        return depositAmount * BONUS_CONFIG.FIRST_DEPOSIT_BONUS_RATE;
+    } else if (bonusType === 'special_bonus') {
+        return depositAmount * BONUS_CONFIG.SPECIAL_BONUS_RATE;
+    }
+    return 0;
+};
+
+UserSchema.methods.getAvailableBonusOffers = function() {
+    const offers = [];
     
-    // Check if new password is in history
-    const isUsed = await Promise.all(
-        this.passwordHistory.map(async oldPassword => {
-            return await bcrypt.compare(newPassword, oldPassword.password);
-        })
-    );
-    
-    if (isUsed.includes(true)) {
-        throw new Error('Cannot use a previously used password');
+    if (this.isEligibleForFirstDepositBonus()) {
+        offers.push({
+            type: 'first_deposit',
+            name: 'First Deposit Bonus (3%)',
+            description: 'Get 3% extra bonus on your first deposit',
+            rate: BONUS_CONFIG.FIRST_DEPOSIT_BONUS_RATE
+        });
     }
     
-    // Change the password
-    this.password = newPassword;
-    this.otp = undefined; // Clear OTP after successful change
-    await this.save();
-    
-    return true;
-};
-
-// Check if password has been used before
-UserSchema.methods.hasUsedPassword = async function(password) {
-    if (!this.passwordHistory || this.passwordHistory.length === 0) {
-        return false;
+    if (this.isEligibleForSpecialBonus()) {
+        offers.push({
+            type: 'special_bonus',
+            name: 'Special 150% Bonus',
+            description: 'Get 150% bonus with 30x wagering requirement',
+            rate: BONUS_CONFIG.SPECIAL_BONUS_RATE,
+            wageringRequirement: BONUS_CONFIG.WAGERING_REQUIREMENT
+        });
     }
     
-    const isUsed = await Promise.all(
-        this.passwordHistory.map(async oldPassword => {
-            return await bcrypt.compare(password, oldPassword.password);
-        })
-    );
-    
-    return isUsed.includes(true);
+    return offers;
 };
 
-// Deposit method
+// ========== DEPOSIT METHODS ==========
 UserSchema.methods.createDeposit = async function({ method, amount, bonusType = 'none' }) {
-    // Validate amount
-    if (amount < 100 || amount > 30000) {
-        throw new Error('Deposit amount must be between 100 and 30,000 BDT');
+    if (amount < BONUS_CONFIG.MIN_DEPOSIT_AMOUNT || amount > BONUS_CONFIG.MAX_DEPOSIT_AMOUNT) {
+        throw new Error(`Deposit amount must be between ${BONUS_CONFIG.MIN_DEPOSIT_AMOUNT} and ${BONUS_CONFIG.MAX_DEPOSIT_AMOUNT} BDT`);
     }
 
-    // Create deposit record
+    if (bonusType !== 'none') {
+        if (bonusType === 'first_deposit' && !this.isEligibleForFirstDepositBonus()) {
+            throw new Error('Not eligible for first deposit bonus');
+        }
+        if (bonusType === 'special_bonus' && !this.isEligibleForSpecialBonus()) {
+            throw new Error('Not eligible for special bonus');
+        }
+    }
+
     const deposit = {
         method,
         amount,
@@ -720,50 +750,45 @@ UserSchema.methods.createDeposit = async function({ method, amount, bonusType = 
 
     this.depositHistory.push(deposit);
     await this.save();
-
     return deposit;
 };
 
-// Complete deposit method
-UserSchema.methods.completeDeposit = async function(orderId, transactionId, bonusAmount = 0) {
+UserSchema.methods.completeDeposit = async function(orderId, transactionId) {
     const deposit = this.depositHistory.find(d => d.orderId === orderId && d.status === 'pending');
     
     if (!deposit) {
         throw new Error('Pending deposit not found');
     }
 
-    // Update deposit status
+    let bonusAmount = 0;
+    if (deposit.bonusType !== 'none') {
+        bonusAmount = this.calculateBonusAmount(deposit.amount, deposit.bonusType);
+    }
+
     deposit.status = 'completed';
     deposit.transactionId = transactionId;
     deposit.completedAt = new Date();
     deposit.bonusAmount = bonusAmount;
     deposit.bonusApplied = bonusAmount > 0;
 
-    // Update balance
     this.balance += deposit.amount;
     this.total_deposit += deposit.amount;
 
-    // Handle bonus if applicable
     if (bonusAmount > 0) {
         this.bonusBalance += bonusAmount;
         
-        // Add to active bonuses if it's a special bonus
-        if (deposit.bonusType === 'special_bonus') {
-            this.bonusInfo.activeBonuses.push({
-                bonusType: 'special_bonus',
-                amount: bonusAmount,
-                originalAmount: bonusAmount,
-                wageringRequirement: BONUS_CONFIG.WAGERING_REQUIREMENT
-            });
-        }
+        this.bonusInfo.activeBonuses.push({
+            bonusType: deposit.bonusType,
+            amount: bonusAmount,
+            originalAmount: bonusAmount,
+            wageringRequirement: BONUS_CONFIG.WAGERING_REQUIREMENT
+        });
         
-        // Mark first deposit bonus as claimed if applicable
         if (deposit.bonusType === 'first_deposit' && !this.bonusInfo.firstDepositBonusClaimed) {
             this.bonusInfo.firstDepositBonusClaimed = true;
         }
     }
 
-    // Add transaction record
     this.transactionHistory.push({
         type: 'deposit',
         amount: deposit.amount,
@@ -777,159 +802,50 @@ UserSchema.methods.completeDeposit = async function(orderId, transactionId, bonu
     return deposit;
 };
 
-// Create withdrawal request
-UserSchema.methods.createWithdrawal = async function({ method, amount, accountNumber }) {
-    // Validate amount
-    if (amount < 300) {
-        throw new Error('Minimum withdrawal amount is 300 BDT');
-    }
-
-    // Check available balance
-    const availableBalance = this.availableBalance;
-    if (amount > availableBalance) {
-        throw new Error(`Insufficient balance. Available: ${availableBalance.toFixed(2)} BDT`);
-    }
-
-    // Check daily withdrawal limit
-    const today = new Date().toDateString();
-    const lastWithdrawalDay = this.lastWithdrawalDate ? new Date(this.lastWithdrawalDate).toDateString() : null;
-    
-    if (lastWithdrawalDay && today === lastWithdrawalDay && this.withdrawalCountToday >= 3) {
-        throw new Error('Maximum 3 withdrawals allowed per day');
-    }
-
-    // Create withdrawal record
-    const withdrawal = {
-        method,
-        amount,
-        netAmount: amount,
-        accountNumber,
-        status: 'pending',
-        orderId: `WD-${Date.now()}-${Math.floor(Math.random() * 1000)}`
-    };
-
-    // Apply commission if wagering requirements not met
-    if (this.total_deposit > 0 && (this.totalWagered || 0) < (this.total_deposit * 3)) {
-        withdrawal.commissionApplied = true;
-        withdrawal.commissionAmount = amount * 0.2;
-        withdrawal.netAmount = amount * 0.8;
-    }
-
-    this.withdrawHistory.push(withdrawal);
-    this.withdrawalCountToday += 1;
-    this.lastWithdrawalDate = new Date();
-    
-    await this.save();
-    return withdrawal;
-};
-
-// Complete withdrawal method
-UserSchema.methods.completeWithdrawal = async function(orderId, transactionId) {
-    const withdrawal = this.withdrawHistory.find(w => w.orderId === orderId && w.status === 'pending');
-    
-    if (!withdrawal) {
-        throw new Error('Pending withdrawal not found');
-    }
-
-    // Update withdrawal status
-    withdrawal.status = 'completed';
-    withdrawal.transactionId = transactionId;
-    withdrawal.completedAt = new Date();
-
-    // Update balance
-    this.balance -= withdrawal.amount;
-    this.total_withdraw += withdrawal.amount;
-
-    // Add transaction record
-    this.transactionHistory.push({
-        type: 'withdrawal',
-        amount: withdrawal.amount,
-        balanceBefore: this.balance + withdrawal.amount,
-        balanceAfter: this.balance,
-        description: `Withdrawal via ${withdrawal.method}`,
-        referenceId: transactionId
-    });
-
-    await this.save();
-    return withdrawal;
-};
-
-// Cancel withdrawal method
-UserSchema.methods.cancelWithdrawal = async function(orderId, reason = 'User cancelled') {
-    const withdrawal = this.withdrawHistory.find(w => w.orderId === orderId && w.status === 'pending');
-    
-    if (!withdrawal) {
-        throw new Error('Pending withdrawal not found');
-    }
-
-    withdrawal.status = 'cancelled';
-    withdrawal.processedAt = new Date();
-    withdrawal.reason = reason;
-
-    // Decrement withdrawal count if it's the same day
-    const today = new Date().toDateString();
-    const withdrawalDay = new Date(withdrawal.createdAt).toDateString();
-    
-    if (today === withdrawalDay) {
-        this.withdrawalCountToday = Math.max(0, this.withdrawalCountToday - 1);
-    }
-
-    await this.save();
-    return withdrawal;
-};
-
-// Apply bet to wagering requirements
+// ========== BONUS WAGERING METHODS ==========
 UserSchema.methods.applyBetToWagering = async function(amount) {
     this.totalWagered += amount;
     this.total_bet += amount;
 
-    // Update active bonuses
     if (this.bonusInfo.activeBonuses.length > 0) {
         for (const bonus of this.bonusInfo.activeBonuses) {
             if (bonus.status === 'active') {
                 bonus.amountWagered += amount;
                 
-                // Check if wagering requirement is met
                 if (bonus.amountWagered >= (bonus.originalAmount * bonus.wageringRequirement)) {
                     bonus.status = 'completed';
                 }
             }
         }
         
-        // Remove completed bonuses
         this.bonusInfo.activeBonuses = this.bonusInfo.activeBonuses.filter(b => b.status !== 'completed');
     }
 
     await this.save();
 };
 
-// Cancel bonus with penalty
 UserSchema.methods.cancelBonusWithPenalty = async function() {
     if (this.bonusBalance <= 0) {
         throw new Error('No active bonus to cancel');
     }
 
-    const penaltyAmount = this.bonusBalance * 1.5; // 150% penalty
+    const penaltyAmount = this.bonusBalance * 1.5;
     
-    // Deduct penalty from main balance
     if (this.balance < penaltyAmount) {
         throw new Error('Insufficient balance to pay penalty');
     }
 
     this.balance -= penaltyAmount;
     
-    // Record cancelled bonus
     this.bonusInfo.cancelledBonuses.push({
-        bonusType: 'special_bonus', // Assuming it's always special bonus for now
+        bonusType: 'special_bonus',
         amount: this.bonusBalance,
         penaltyApplied: penaltyAmount,
         cancelledAt: new Date()
     });
 
-    // Clear bonus balance
     this.bonusBalance = 0;
     
-    // Mark all active bonuses as cancelled
     this.bonusInfo.activeBonuses = this.bonusInfo.activeBonuses.map(bonus => {
         if (bonus.status === 'active') {
             bonus.status = 'cancelled';
@@ -937,7 +853,6 @@ UserSchema.methods.cancelBonusWithPenalty = async function() {
         return bonus;
     });
 
-    // Add transaction record
     this.transactionHistory.push({
         type: 'penalty',
         amount: penaltyAmount,
@@ -951,8 +866,7 @@ UserSchema.methods.cancelBonusWithPenalty = async function() {
     return penaltyAmount;
 };
 
-// ========== STATICS ==========
-// One-click registration
+// ========== STATIC METHODS ==========
 UserSchema.statics.oneClickRegister = async function(username) {
     const existingUser = await this.findOne({ username });
     if (existingUser) {
@@ -966,7 +880,6 @@ UserSchema.statics.oneClickRegister = async function(username) {
     });
 };
 
-// Find by credentials
 UserSchema.statics.findByCredentials = async function(username, password) {
     const user = await this.findOne({ username }).select('+password');
     if (!user) {
@@ -981,7 +894,6 @@ UserSchema.statics.findByCredentials = async function(username, password) {
     return user;
 };
 
-// Find by email or phone for password reset
 UserSchema.statics.findByEmailOrPhone = async function(emailOrPhone) {
     return this.findOne({
         $or: [

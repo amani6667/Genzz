@@ -13,6 +13,7 @@ import FAQ from './pages/faq/FAQ'
 import Affiliateprogramme from './pages/affiliate/Affiliateprogramme'
 import Vipclub from './pages/club/Vipclub'
 import GameProviders from './components/provider/GameProviders'
+import Contact from './pages/contact/Contact'
 
 const App = () => {
   const [isLoading, setIsLoading] = useState(true)
@@ -82,6 +83,7 @@ const App = () => {
         <Route exact path="/affiliate-programme" element={<Affiliateprogramme />} />
         <Route exact path="/vip-club" element={<Vipclub />} />
         <Route exact path="/provider" element={<GameProviders />} />
+        <Route exact path="/contact" element={<Contact />} />
 
       </Routes>
     </BrowserRouter>

@@ -80,6 +80,42 @@ user_route.put("/update-username", ensureAuthenticated, async (req, res) => {
         });
     }
 });
+// -------------------------refer-balance-transfrer-to-main-balance-------------------
+user_route.put("/transfer-refer-balance-to-main-balance",async(req,res)=>{
+    try {
+        const { userId } = req.body;
+
+        // ইউজার খুঁজুন
+        const user = await UserModel.findById({_id:userId});  
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "ইউজার খুঁজে পাওয়া যায়নি"
+            });
+        }
+        // রেফারেল ব্যালেন্স চেক করুন
+        console.log(user)
+        if (user.referralEarnings <= 999) {
+            return res.status(400).json({
+                success: false,
+                message: "রেফারেল ব্যালেন্স শূন্য বা নেতিবাচক"
+            });
+        }
+        // রেফারেল ব্যালেন্স থেকে মেইন ব্যালেন্সে ট্রান্সফার করুন
+        user.balance += user.referralEarnings;
+        user.referralEarnings = 0; // রেফারেল ব্যালেন্স শূন্য করুন
+        await user.save();
+        res.send({
+            success: true,
+            message: "রেফারেল ব্যালেন্স সফলভাবে মেইন ব্যালেন্সে ট্রান্সফার হয়েছে",
+            data: {
+                balance: user.balance,
+                referralEarnings: user.referralEarnings
+            }
+        });
+    } catch (error) {
+     console.log(error)
+    }});
 // --------------------------------user-information-----------------------
 user_route.get("/user-information/:id",ensureAuthenticated,async(req,res)=>{
   try {
@@ -114,67 +150,95 @@ user_route.put("/after-play-minus-balance",ensureAuthenticated,async(req,res)=>{
 // Payment gateway configuration
 const PAYMENT_CONFIG = {
   BASE_URL: process.env.PAYMENT_GATEWAY_URL || 'http://localhost:8080',
-  API_KEY: process.env.PAYMENT_GATEWAY_API_KEY || '	b681e4a242dfdcf173db',
-  FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173'
+  API_KEY: process.env.PAYMENT_GATEWAY_API_KEY || 'b681e4a242dfdcf173db',
+  FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5175'
 };
 
-// Initiate deposit
-user_route.post('/initiate',async (req, res) => {
-    const { method, amount, bonusType,userid } = req.body;
-     console.log(req.body)
+// Deposit initiation
+// Deposit initiation with proper bonus handling
+user_route.post('/initiate', async (req, res) => {
+    const { method, amount, bonusType, userid } = req.body;
+    
     try {
         // Validate inputs
-        if (!method || !amount) {
-            return res.status(400).json({ message: 'Method and amount are required' });
+        if (!method || !amount || !userid) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Method, amount and user ID are required' 
+            });
         }
 
         const amountNum = parseFloat(amount);
         if (isNaN(amountNum)) {
-            return res.status(400).json({ message: 'Invalid amount' });
+            return res.status(400).json({ 
+                success: false,
+                message: 'অনুগ্রহ করে একটি বৈধ অর্থের পরিমাণ লিখুন' // Please enter a valid amount
+            });
         }
 
         if (amountNum < 100 || amountNum > 30000) {
             return res.status(400).json({ 
-                message: 'Amount must be between 100 and 30,000 BDT' 
+                success: false,
+                message: amountNum < 100 ? 
+                    'ন্যূনতম জমার পরিমাণ ১০০ টাকা' : // Minimum deposit amount is 100 BDT
+                    'সর্বোচ্চ জমার পরিমাণ ৩০,০০০ টাকা' // Maximum deposit amount is 30,000 BDT
             });
         }
        
-        const user = await User.findById(req.body.userid);
+        const user = await User.findById(userid);
         if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+            return res.status(404).json({ 
+                success: false,
+                message: 'User not found' 
+            });
         }
 
         // Check if user has mobile number
         if (!user.phone) {
             return res.status(400).json({ 
-                message: 'Please add a mobile number to your account before depositing' 
+                success: false,
+                message: 'অনুগ্রহ করে প্রথমে আপনার অ্যাকাউন্টে একটি মোবাইল নম্বর যোগ করুন' // Please add mobile number first
             });
         }
 
+        // Calculate account age in days
+        const accountAgeInDays = Math.floor((new Date() - user.createdAt) / (1000 * 60 * 60 * 24));
+        const isNewUser = accountAgeInDays < 3;
+        
+        // Check bonus eligibility
+        const firstDepositBonusAvailable = !user.bonusInfo.firstDepositBonusClaimed && user.total_deposit === 0;
+        const specialBonusAvailable = isNewUser && user.total_deposit === 0 && 
+                                   !user.bonusInfo.activeBonuses.some(b => b.bonusType === 'special_bonus');
+
         // Validate bonus selection
         if (bonusType && bonusType !== 'none') {
-            if (bonusType === 'first_deposit' && user.bonusInfo.firstDepositBonusClaimed) {
+            if (bonusType === 'first_deposit' && !firstDepositBonusAvailable) {
                 return res.status(400).json({ 
-                    message: 'First deposit bonus already claimed' 
+                    success: false,
+                    message: 'প্রথম ডিপোজিট বোনাস পাওয়ার জন্য আপনি অযোগ্য' // Not eligible for first deposit bonus
                 });
             }
-
-            if (bonusType === 'special_bonus' && 
-                (!user.isNewUser || user.total_deposit > 0)) {
+            
+            if (bonusType === 'special_bonus' && !specialBonusAvailable) {
                 return res.status(400).json({ 
-                    message: 'Special bonus only available for new users with no prior deposits' 
+                    success: false,
+                    message: 'বিশেষ বোনাস পাওয়ার জন্য আপনি অযোগ্য' // Not eligible for special bonus
                 });
             }
+        } else if ((firstDepositBonusAvailable || specialBonusAvailable) && (!bonusType || bonusType === 'none')) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'অনুগ্রহ করে একটি বোনাস অফার নির্বাচন করুন' // Please select a bonus offer
+            });
         }
 
-        // Create deposit record in pending state
-        const orderId = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        // Create deposit record
         const deposit = {
             method,
             amount: amountNum,
             status: 'pending',
             bonusType: bonusType || 'none',
-            orderId,
+            orderId: `DEP-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
             createdAt: new Date()
         };
 
@@ -185,10 +249,10 @@ user_route.post('/initiate',async (req, res) => {
         const paymentPayload = {
             provider: method.toLowerCase(),
             amount: amountNum,
-            orderId,
+            orderId: deposit.orderId,
             currency: "BDT",
             payerId: user.player_id,
-            redirectUrl: `${PAYMENT_CONFIG.FRONTEND_URL}/user/deposit-success`,
+            redirectUrl: `http://localhost:5173`, // Adjust as needed
             callbackUrl: `http://localhost:8000/user/callback`
         };
 
@@ -210,44 +274,54 @@ user_route.post('/initiate',async (req, res) => {
 
         res.json({
             success: true,
-            message: 'Payment initiated',
+            message: 'Payment initiated successfully',
             paymentId: paymentResponse.data.paymentId,
-            redirectUrl: `http://localhost:5175/checkout/${paymentResponse.data.paymentId}`
+            redirectUrl: paymentResponse.data.redirectUrl || 
+                      `${PAYMENT_CONFIG.FRONTEND_URL}/checkout/${paymentResponse.data.paymentId}`
         });
 
     } catch (error) {
         console.error('Deposit initiation error:', error);
         res.status(500).json({ 
-            message: error.response?.data?.message || error.message || 'Server error' 
+            success: false,
+            message: error.response?.data?.message || error.message || 'Payment failed. Please try again.' 
         });
     }
 });
 
-// Payment callback handler
+// Payment callback handler with bonus processing
 user_route.post('/callback', async (req, res) => {
     const { paymentId, transactionId, status, amount, player_id } = req.body;
-    console.log("Received callback:", req.body);
     
     try {
         if (!paymentId || !status || !player_id) {
-            return res.status(400).json({ message: 'Invalid callback data' });
+            return res.status(400).json({ 
+                success: false,
+                message: 'Invalid callback data' 
+            });
         }
 
-        // Find user with pending deposit matching this paymentId (previously orderId)
+        // Find user with pending deposit
         const user = await User.findOne({
             'depositHistory.orderId': paymentId,
             'depositHistory.status': 'pending',
-            'playerId': player_id // Assuming you store playerId in your User model
-        });
-
+            'player_id': player_id
+        }).populate('referredBy');
+        
         if (!user) {
-            return res.status(404).json({ message: 'Deposit not found or already processed' });
+            return res.status(404).json({ 
+                success: false,
+                message: 'Deposit not found or already processed' 
+            });
         }
 
         // Find the specific deposit record
         const depositIndex = user.depositHistory.findIndex(d => d.orderId === paymentId);
         if (depositIndex === -1) {
-            return res.status(404).json({ message: 'Deposit record not found' });
+            return res.status(404).json({ 
+                success: false,
+                message: 'Deposit record not found' 
+            });
         }
 
         const deposit = user.depositHistory[depositIndex];
@@ -256,79 +330,265 @@ user_route.post('/callback', async (req, res) => {
             // Verify amount matches
             if (amount && parseFloat(amount) !== deposit.amount) {
                 console.warn(`Amount mismatch for payment ${paymentId}. Expected: ${deposit.amount}, Received: ${amount}`);
-                // You may want to flag this for manual review
             }
-
+            
             // Calculate bonus if applicable
             let bonusAmount = 0;
-            if (deposit.bonusType === 'first_deposit') {
+            if (deposit.bonusType === 'first-deposit') {
                 bonusAmount = deposit.amount * 0.03; // 3% bonus
-            } else if (deposit.bonusType === 'special_bonus') {
+                // Mark first deposit bonus as claimed
+                user.bonusInfo.firstDepositBonusClaimed = true;
+                user.balance += bonusAmount;
+                user.bouceBalance += bonusAmount; // Add bonus to bonus balance
+            } else if (deposit.bonusType === 'special-bonus') {
                 bonusAmount = deposit.amount * 1.5; // 150% bonus
+                // Add special bonus to active bonuses
+                user.bonusInfo.activeBonuses.push({
+                    bonusType: 'special_bonus',
+                    amount: bonusAmount,
+                    originalAmount: bonusAmount,
+                    wageringRequirement: 30, // 30x
+                    createdAt: new Date(),
+                    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days expiry
+                });
+                  // Add bonus to bonus balance if applicable
+            if (bonusAmount > 0) {
+                user.bonusBalance += bonusAmount;
+            }
             }
 
             // Update deposit status
-            user.depositHistory[depositIndex].status = 'completed';
-            user.depositHistory[depositIndex].transactionId = transactionId;
-            user.depositHistory[depositIndex].completedAt = new Date();
-            user.depositHistory[depositIndex].bonusAmount = bonusAmount;
+            user.depositHistory[depositIndex] = {
+                ...deposit.toObject(),
+                status: 'completed',
+                transactionId: transactionId,
+                completedAt: new Date(),
+                bonusAmount: bonusAmount,
+                bonusApplied: bonusAmount > 0
+            };
 
             // Update user balance
+            const balanceBefore = user.balance;
             user.balance += deposit.amount;
             user.total_deposit += deposit.amount;
 
-            // Apply bonus if any
-            if (bonusAmount > 0) {
-                user.bonusBalance += bonusAmount;
-                
-                if (deposit.bonusType === 'special_bonus') {
-                    user.bonusInfo.activeBonuses.push({
-                        bonusType: 'special_bonus',
-                        amount: bonusAmount,
-                        originalAmount: bonusAmount,
-                        wageringRequirement: 30 // 30x
-                    });
-                }
-                
-                if (deposit.bonusType === 'first_deposit') {
-                    user.bonusInfo.firstDepositBonusClaimed = true;
-                }
-            }
+          
 
             // Add transaction record
             user.transactionHistory.push({
                 type: 'deposit',
                 amount: deposit.amount,
-                balanceBefore: user.balance - deposit.amount,
+                balanceBefore: balanceBefore,
                 balanceAfter: user.balance,
                 description: `Deposit via ${deposit.method}`,
                 referenceId: transactionId,
                 createdAt: new Date()
             });
 
+            // Handle referral bonus if user was referred by someone
+        if (user.referredBy) {
+    const referrer = await User.findById(user.referredBy);
+    if (referrer) {
+        // Calculate referral bonus based on the formula:
+        // (Total Deposit - Total Withdrawal - Current Balance) × 25%
+        const netLoss = user.total_deposit - user.total_withdraw - user.balance;
+        const referralBonus = netLoss * 0.25;
+        console.log("Referral bonus calculated:", referralBonus);
+        
+        // Proceed if referralBonus is not zero (either positive or negative)
+        if (referralBonus !== 0) {
+            // Update referrer's balance
+            const referrerBalanceBefore = referrer.balance;
+            
+            if (referralBonus > 0) {
+                // Positive bonus - add to referrer's balance
+                referrer.balance += referralBonus;
+                referrer.referralEarnings += referralBonus;
+            } else {
+                // Negative bonus - deduct from referrer's balance
+                // Ensure referrer has enough balance to cover the deduction
+                if (referrer.balance >= Math.abs(referralBonus)) {
+                    referrer.balance += referralBonus; // Adding negative number = deduction
+                    referrer.referralEarnings += referralBonus; // Deduct from earnings
+                } else {
+                    // If not enough balance, set to zero and track the remaining debt
+                    const remainingDebt = Math.abs(referralBonus) - referrer.balance;
+                    referrer.referralEarnings -= referrer.balance; // Deduct what we can
+                    referrer.balance = 0;
+                    console.log(`Referrer doesn't have enough balance to cover full deduction. Remaining debt: ${remainingDebt}`);
+                    // You might want to track this debt somewhere
+                }
+            }
+            
+            // Update referral tracking
+            const referralUserIndex = referrer.referralUsers.findIndex(
+                ref => ref.user && ref.user.toString() === user._id.toString()
+            );
+            
+            if (referralUserIndex !== -1) {
+                referrer.referralUsers[referralUserIndex].earnedAmount += referralBonus;
+            } else {
+                referrer.referralUsers.push({
+                    user: user._id,
+                    joinedAt: new Date(),
+                    earnedAmount: referralBonus
+                });
+            }
+            
+            // Add transaction record for referrer
+            referrer.transactionHistory.push({
+                type: referralBonus > 0 ? 'bonus' : 'penalty',
+                amount: Math.abs(referralBonus),
+                balanceBefore: referrerBalanceBefore,
+                balanceAfter: referrer.balance,
+                description: referralBonus > 0 
+                    ? `Referral bonus from ${user.username}'s deposit (25% of net loss)`
+                    : `Referral penalty from ${user.username}'s activity (25% of net gain)`,
+                referenceId: `REF-${transactionId}`,
+                createdAt: new Date()
+            });
+            
+            // Add transaction record for referred user
+            user.transactionHistory.push({
+                type: 'bonus',
+                amount: 0,
+                balanceBefore: user.balance,
+                balanceAfter: user.balance,
+                description: referralBonus > 0
+                    ? `Your activity generated referral bonus for ${referrer.username}`
+                    : `Your activity resulted in referral penalty for ${referrer.username}`,
+                referenceId: `REF-${transactionId}`,
+                createdAt: new Date()
+            });
+            
+            await referrer.save();
+        }
+    }
+}
+
             await user.save();
             
             return res.json({ 
                 success: true,
-                message: 'Deposit completed successfully'
+                message: 'Deposit completed successfully',
+                bonusAmount: bonusAmount
             });
         } else {
             // Mark as failed
-            user.depositHistory[depositIndex].status = 'failed';
-            user.depositHistory[depositIndex].processedAt = new Date();
+            user.depositHistory[depositIndex] = {
+                ...deposit.toObject(),
+                status: 'failed',
+                processedAt: new Date()
+            };
+            
             await user.save();
             
             return res.json({ 
                 success: false,
-                message: 'Deposit failed'
+                message: 'Deposit failed' 
             });
         }
     } catch (error) {
         console.error('Deposit callback error:', error);
-        res.status(500).json({ message: 'Server error processing callback' });
+        res.status(500).json({ 
+            success: false,
+            message: 'Server error processing callback' 
+        });
     }
 });
+// Bonus cancellation route with penalty
+user_route.post('/cancel-bonus', async (req, res) => {
+    const { userid } = req.body;
+    try {
+        console.log(userid)
+        if (!userid) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'User ID is required' 
+            });
+        }
+ 
+        const user = await User.findById(userid);
+        console.log(user)
+        if (!user) {
+            return res.status(404).json({ 
+                success: false,
+                message: 'User not found' 
+            });
+        }
 
+        // Check if user has any active bonus
+        if (user.bonusBalance <= 0 || !user.bonusInfo.activeBonuses.some(b => b.status === 'active')) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'কোন সক্রিয় বোনাস নেই' // No active bonus
+            });
+        }
+
+        // Record cancelled bonus
+        const cancelledBonusAmount = user.bonusBalance;
+        user.bonusInfo.cancelledBonuses.push({
+            bonusType: 'special_bonus', // Assuming it's special bonus
+            amount: cancelledBonusAmount,
+            penaltyApplied: 0, // No penalty
+            cancelledAt: new Date()
+        });
+
+        // Clear bonus balance
+        user.bonusBalance = 0;
+        
+        // Mark all active bonuses as cancelled
+        user.bonusInfo.activeBonuses = user.bonusInfo.activeBonuses.map(bonus => {
+            if (bonus.status === 'active') {
+                return {
+                    ...bonus.toObject(),
+                    status: 'cancelled'
+                };
+            }
+            return bonus;
+        });
+
+        await user.save();
+
+        res.json({
+            success: true,
+            message: 'বোনাস সফলভাবে বাতিল হয়েছে।', 
+            // Bonus cancelled successfully.
+            cancelledBonusAmount: cancelledBonusAmount,
+            newBalance: user.balance
+        });
+
+    } catch (error) {
+        console.error('Bonus cancellation error:', error);
+        res.status(500).json({ 
+            success: false,
+            message: error.message || 'বোনাস বাতিল করতে ব্যর্থ হয়েছে। পরে আবার চেষ্টা করুন।' 
+            // Failed to cancel bonus. Please try again later.
+        });
+    }
+});
+// Helper function to send deposit notification
+async function sendDepositNotification(user, amount, bonusAmount = 0) {
+    try {
+        const notification = {
+            userId: user._id,
+            type: 'deposit',
+            title: 'Deposit Completed',
+            message: `Your deposit of ${amount} BDT has been processed${bonusAmount > 0 ? ` with ${bonusAmount} BDT bonus` : ''}`,
+            read: false,
+            createdAt: new Date()
+        };
+        
+        // Here you would typically save to database and/or send push notification
+        // For example:
+        // await Notification.create(notification);
+        // sendPushNotification(user.deviceTokens, notification);
+        
+        console.log(`Notification sent for deposit: ${amount} BDT`);
+    } catch (error) {
+        console.error('Error sending deposit notification:', error);
+    }
+}
 // Get deposit history
 user_route.get('/history', ensureAuthenticated, async (req, res) => {
     try {
@@ -468,45 +728,170 @@ user_route.get("/single-user-transactions/:id",async(req,res)=>{
 });
 // ----------------withdrawal-history------------------------
 // Create a withdrawal request
-user_route.post("/payout",async (req, res) => {
+user_route.post("/payout", async (req, res) => {
     try {
-      const { userId,username,email,playerId,provider, amount, orderId, payeeAccount,post_balance,recieved_amount,tax_amount } = req.body;
-      console.log(req.body)
-      // Validate the user
-      const user = await UserModel.findById(userId);
-      if (!user) return res.status(400).json({ success: false, message: "User not found." });
-  
-      // Check balance
-      if (user.balance < amount) {
-        return res.status(400).json({ success: false, message: "Insufficient balance." });
-      }
-  
-      // Create withdrawal request
-      const newWithdrawal = new Withdrawmodel({
-        userId,
-        provider,
-        amount,
-        orderId,
-        payeeAccount,
-        name:username,
-        email,
-        playerId,
-        post_balance,
-        recieved_amount,
-        tax_amount
-      });
-  
-      await newWithdrawal.save();
-  
-      // Deduct balance
-      user.balance -= amount;
-      user.transactions+=1;
-      await user.save();
-  
-      res.json({ success: true, message: "Withdrawal request submitted!" });
+        const { userId, username, email, playerId, provider, amount, orderId, payeeAccount } = req.body;
+        
+        // Validate required fields
+        const requiredFields = ['userId', 'username', 'email', 'playerId', 'provider', 'amount', 'orderId', 'payeeAccount'];
+        const missingFields = requiredFields.filter(field => !req.body[field]);
+        
+        if (missingFields.length > 0) {
+            return res.status(400).json({ 
+                success: false, 
+                message: `Missing required fields: ${missingFields.join(', ')}`
+            });
+        }
+
+        // Validate amount is a positive number
+        if (isNaN(amount) || amount <= 0) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Amount must be a positive number"
+            });
+        }
+
+        // Validate provider is supported
+        const supportedProviders = ['bkash', 'nagad', 'rocket', 'bank'];
+        if (!supportedProviders.includes(provider)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: `Unsupported provider. Supported providers are: ${supportedProviders.join(', ')}`
+            });
+        }
+
+        // Validate the user
+        const user = await UserModel.findById(userId).select('+transactionPassword');
+        if (!user) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "User not found." 
+            });
+        }
+
+        // Verify user identity
+        if (user.username !== username || user.email !== email || user.player_id !== playerId) {
+            return res.status(403).json({ 
+                success: false, 
+                message: "User credentials don't match" 
+            });
+        }
+
+        // Check if user can withdraw
+        const withdrawalCheck = user.canWithdraw(amount);
+        if (!withdrawalCheck.canWithdraw) {
+            return res.status(400).json({ 
+                success: false, 
+                message: withdrawalCheck.reason 
+            });
+        }
+
+        // Create withdrawal request
+        const newWithdrawal = new Withdrawmodel({
+            userId,
+            provider,
+            amount,
+            orderId,
+            payeeAccount,
+            name: username,
+            email,
+            playerId,
+            post_balance: user.balance - amount,
+            recieved_amount: withdrawalCheck.netAmount,
+            tax_amount: withdrawalCheck.commission,
+            status: 'pending',
+            processedAt: null,
+            completedAt: null
+        });
+
+        // Deduct balance from user
+        user.balance -= amount;
+        user.total_withdraw += amount;
+
+        // Add to transaction history
+        user.transactionHistory.push({
+            type: 'withdrawal',
+            amount: amount,
+            balanceBefore: user.balance + amount,
+            balanceAfter: user.balance,
+            description: `Withdrawal via ${provider}`,
+            referenceId: orderId
+        });
+
+        // Save both user and withdrawal in transaction
+        await Promise.all([
+            newWithdrawal.save(),
+            user.save()
+        ]);
+
+        res.status(201).json({ 
+            success: true, 
+            message: "Withdrawal request submitted successfully!",
+            data: {
+                withdrawalId: newWithdrawal._id,
+                amount: amount,
+                netAmount: withdrawalCheck.netAmount,
+                commission: withdrawalCheck.commission,
+                newBalance: user.balance,
+                status: 'pending'
+            }
+        });
+
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ success: false, message: "Server error." });
+        console.error("Payout error:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message || "Internal server error" 
+        });
+    }
+});
+user_route.get("/withdrawals/:userid", async (req, res) => {
+    try {
+        const { userid } = req.params;
+        const { page = 1, limit = 10, status } = req.query;
+         console.log(userid)
+        // Validate user exists
+        const userExists = await UserModel.exists({ _id: userid });
+        if (!userExists) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "User not found" 
+            });
+        }
+
+        // Build query
+        const query = { userid };
+        if (status) {
+            query.status = status;
+        }
+
+        // Get paginated withdrawals
+        const withdrawals = await Withdrawmodel.find(query)
+            .sort({ createdAt: -1 })
+            .skip((page - 1) * limit)
+            .limit(parseInt(limit))
+            .lean();
+
+        // Get total count for pagination
+        const total = await Withdrawmodel.countDocuments(query);
+
+        res.json({
+            success: true,
+            data: withdrawals,
+            pagination: {
+                page: parseInt(page),
+                limit: parseInt(limit),
+                total,
+                pages: Math.ceil(total / limit)
+            }
+        });
+
+    } catch (error) {
+        console.error("Withdrawal history error:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message || "Internal server error" 
+        });
     }
 });
   // Get user's withdrawals
@@ -1127,4 +1512,6 @@ user_route.get("/referral-stats/:userId", ensureAuthenticated, async (req, res) 
         });
     }
 });
+
+
 module.exports=user_route;

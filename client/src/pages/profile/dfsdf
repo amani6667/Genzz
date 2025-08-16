@@ -21,26 +21,17 @@ import {
   FaTimesCircle,
   FaClock,
   FaShareAlt,
+  FaBangladeshiTakaSign
 } from 'react-icons/fa';
 import { MdArrowBackIosNew } from "react-icons/md";
 import { NavLink, useNavigate } from 'react-router-dom';
-import { FaBangladeshiTakaSign } from "react-icons/fa6";
-import man from "../../assets/profileimages/man.png"
-import man1 from "../../assets/profileimages/man1.png"
-import man2 from "../../assets/profileimages/man2.png"
-import man3 from "../../assets/profileimages/man3.png"
-import man4 from "../../assets/profileimages/man4.png"
-import man5 from "../../assets/profileimages/man5.png"
-import man6 from "../../assets/profileimages/man6.png"
-import { useUser } from '../../context/UserContext';
-import { FaSignOutAlt} from 'react-icons/fa';
 
 const Profile = ({ onBack }) => {
   // State for password visibility
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showTransactionPassword, setShowTransactionPassword] = useState(false);
   const navigate = useNavigate();
-    const { userData, loading, error, fetchUserData } = useUser();
+  
   // State for password forms
   const [currentLoginPassword, setCurrentLoginPassword] = useState('');
   const [newLoginPassword, setNewLoginPassword] = useState('');
@@ -55,13 +46,13 @@ const Profile = ({ onBack }) => {
   const [confirmMobileTransactionPassword, setConfirmMobileTransactionPassword] = useState('');
 
   // State for editable username
-  const [editableUsername, setEditableUsername] = useState(userData?.username || '');
+  const [editableUsername, setEditableUsername] = useState('');
   const [isEditingUsername, setIsEditingUsername] = useState(false);
 
   // User data and loading states
-  // const [userData, setUserData] = useState(null);
-  // const [loading, setLoading] = useState(true);
-  // const [error, setError] = useState(null);
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const base_url = import.meta.env.VITE_API_KEY_Base_URL;
 
   // State for feedback messages
@@ -129,28 +120,27 @@ const Profile = ({ onBack }) => {
   };
 
   // Fetch user data
-  // const fetchUserData = async () => {
-  //   try {
-  //     setLoading(true);
-  //     const response = await axios.get(`${base_url}/user/user-information`, {
-  //       headers: {
-  //         'Authorization': `Bearer ${localStorage.getItem('token')}`
-  //       }
-  //     });
-  //     setUserData(response.data);
-  //     console.log(response.data);
-  //     setEditableUsername(response.data.username);
-  //     setLoading(false);
-  //   } catch (err) {
-  //     setError(err.response?.data?.message || 'Failed to fetch user data');
-  //     setLoading(false);
-  //   }
-  // };
+  const fetchUserData = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${base_url}/user/profile`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      setUserData(response.data);
+      setEditableUsername(response.data.username);
+      setLoading(false);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to fetch user data');
+      setLoading(false);
+    }
+  };
 
   // Initialize user data
-  // useEffect(() => {
-  //   fetchUserData();
-  // }, []);
+  useEffect(() => {
+    fetchUserData();
+  }, []);
 
   // Handle adding mobile number
   const handleAddMobile = async (e) => {
@@ -349,6 +339,13 @@ const Profile = ({ onBack }) => {
       });
     }
   };
+
+  // Get profile image based on username
+  const getProfileImage = (username) => {
+    // This is a placeholder - replace with your actual image logic
+    return `https://images.5943920202.com//TCG_PROD_IMAGES/B2C/01_PROFILE/PROFILE/0.png`;
+  };
+
   // Status badge component
   const StatusBadge = ({ status }) => {
     switch (status) {
@@ -380,49 +377,41 @@ const Profile = ({ onBack }) => {
         );
     }
   };
-// ------------------proifle-images--------------------
 
-// Create an array of all profile images
-const profileImages = [man, man1, man2, man3, man4, man5, man6];
-
-// Function to get a consistent random image based on username
-const getProfileImage = (username) => {
-  if (!username) return man; // default image if no username
+  if (loading) return (
+    <div className="bg-gray-900 min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500 mx-auto"></div>
+        <p className="mt-4 text-gray-300">লোড হচ্ছে...</p>
+      </div>
+    </div>
+  );
   
-  // Create a simple hash from the username to get a consistent index
-  let hash = 0;
-  for (let i = 0; i < username.length; i++) {
-    hash = username.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  
-  // Use absolute value and modulo to get a valid index
-  const index = Math.abs(hash) % profileImages.length;
-  return profileImages[index];
-};
- // Handle logout
-  const handleLogout = () => {
-    logout(); // Call the logout function from context
-    navigate('/login'); // Redirect to login page
-  };
+  if (error) return (
+    <div className="bg-gray-900 min-h-screen flex items-center justify-center">
+      <div className="max-w-md p-6 bg-gray-800 rounded-xl border border-gray-700 shadow-lg">
+        <div className="text-red-500 text-lg font-medium mb-4">ত্রুটি: {error}</div>
+        <button 
+          onClick={() => setError(null)}
+          className="w-full bg-cyan-600 hover:bg-cyan-500 text-white py-2 px-4 rounded-lg transition-colors"
+        >
+          পুনরায় চেষ্টা করুন
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="bg-gray-900 text-gray-100 min-h-screen font-anek">
       {/* Header */}
-  <div className="bg-gray-800 px-1 py-4 flex items-center justify-between border-b border-gray-700 sticky top-0 z-[1000] shadow-md">
+      <div className="bg-gray-800 p-4 flex items-center border-b border-gray-700 sticky top-0 z-[1000] shadow-md">
         <button 
           onClick={() => navigate("/")}
           className="p-2 rounded-full hover:bg-gray-700 transition-colors"
         >
           <MdArrowBackIosNew className="text-lg text-cyan-400" />
         </button>
-        <h1 className="text-[18px] font-[600] text-white">প্রোফাইল</h1>
-        <button 
-          onClick={handleLogout}
-          className="p-2 rounded-full hover:bg-gray-700 transition-colors text-red-400"
-          title="Logout"
-        >
-          <FaSignOutAlt className="text-lg" />
-        </button>
+        <h1 className="text-[18px] font-[600] ml-4 text-white">প্রোফাইল</h1>
       </div>
 
       {/* Mobile Number Alert Modal */}
@@ -536,26 +525,28 @@ const getProfileImage = (username) => {
         </div>
       )}
 
-      <div className="px-1 py-4">
+      <div className="p-4">
         {/* Profile Summary */}
         <div className="bg-gradient-to-br from-gray-800 to-gray-900 p-5 rounded-xl shadow-lg border border-gray-700 mb-6 relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-cyan-900/20 to-purple-900/20"></div>
           <div className="relative z-10">
             <div className="flex items-center gap-4 mb-4">
               <div className="relative">
-                 <div className="relative">
-         <img
-    src={getProfileImage(userData?.username)}
-    alt="User"
-    className="w-16 h-16 rounded-full border-2 border-cyan-400 object-cover"
-  />
-            
-          </div>
+                <img
+                  src={getProfileImage(userData?.username)}
+                  alt="User"
+                  className="w-16 h-16 rounded-full border-2 border-cyan-400 object-cover shadow-md"
+                />
+                <div className="absolute -bottom-1 -right-1 bg-cyan-500 rounded-full p-1">
+                  <div className="bg-white rounded-full p-1">
+                    <FaCheckCircle className="text-cyan-500 text-xs" />
+                  </div>
+                </div>
               </div>
               <div className="flex-1">
-                  <h3 className="text-lg font-bold">{userData?.username || 'N/A'}</h3>
-                <p className="text-sm text-gray-400">
-                  আইডি: {userData?.player_id } | লেভেল: {userData?.level || '1'}
+                <p className="text-lg font-semibold text-white">{userData?.username || 'N/A'}</p>
+                <p className="text-xs text-gray-400">
+                  সদস্য পদ: {formatDateToBengali(userData?.createdAt) || 'N/A'}
                 </p>
               </div>
             </div>
@@ -579,7 +570,7 @@ const getProfileImage = (username) => {
         </div>
 
         {/* Quick Actions */}
-        {/* <div className="grid grid-cols-2 gap-3 mb-6">
+        <div className="grid grid-cols-2 gap-3 mb-6">
           <NavLink 
             to="/deposit"
             className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-3 px-2 rounded-[5px] text-sm font-medium shadow-md transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2"
@@ -604,7 +595,7 @@ const getProfileImage = (username) => {
           >
             <FaHistory /> বেটিং ইতিহাস
           </button>
-        </div> */}
+        </div>
 
         {/* Tab Navigation */}
         <div className="flex overflow-x-auto pb-3 mb-6 hide-scrollbar">

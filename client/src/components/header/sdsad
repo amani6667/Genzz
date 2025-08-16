@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   FaBars, FaFacebookF, FaGoogle, FaPhoneAlt, FaLock, FaUser, 
   FaTimes, FaArrowLeft, FaHome, FaGift, FaMoneyBillAlt, FaTrophy, 
@@ -28,16 +28,294 @@ import {
   FaUserCog,
   FaHistory,
   FaWallet,
-  FaCog
+  FaCog,
+  FaDice,
+  FaCoins
 } from 'react-icons/fa';
 import { FaSyncAlt } from "react-icons/fa";
 import { RiMenuFold2Line } from "react-icons/ri";
 import axios from 'axios';
 import toast, { Toaster } from 'react-hot-toast';
-
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { IoClose } from "react-icons/io5";
+import { MdEmail } from "react-icons/md";
 const API_BASE_URL = import.meta.env.VITE_API_KEY_Base_URL;
+import { useUser } from '../../context/UserContext';
 
-const Header = () => {
+// Import sidebar images
+import popular_img from "../../assets/popular.png"
+import dice_img from "../../assets/dice.png"
+import user_img from "../../assets/user.png"
+import bonus_img from "../../assets/bonus.png"
+import affiliate_img from "../../assets/affiliate.png"
+import question_img from "../../assets/question.png"
+import teamwork_img from "../../assets/teamwork.png"
+import party_img from "../../assets/party.png"
+import link_img from "../../assets/link.png"
+// Profile images
+import man from "../../assets/profileimages/man.png"
+import man1 from "../../assets/profileimages/man1.png"
+import man2 from "../../assets/profileimages/man2.png"
+import man3 from "../../assets/profileimages/man3.png"
+import man4 from "../../assets/profileimages/man4.png"
+import man5 from "../../assets/profileimages/man5.png"
+import man6 from "../../assets/profileimages/man6.png"
+
+const menuItems = [
+  { 
+    icon: popular_img, 
+    label: 'ক্যাসিনো',
+    path: '/hot-games' 
+  },
+  { 
+    icon: dice_img, 
+    label: 'জনপ্রিয়',
+    path: '/hot-games' 
+  },
+  { 
+    icon: user_img, 
+    label: 'আমার একাউন্ট',
+    leftTab: 'আমার অ্যাকাউন্ট'
+  },
+  { 
+    icon: bonus_img, 
+    label: 'বোনাস',
+    leftTab: 'পুরস্কার কেন্দ্র'
+  },
+  { 
+    icon: teamwork_img, 
+    label: 'প্রভাইডার',
+    path: '/provider' 
+  },
+  { 
+    icon: affiliate_img, 
+    label: 'এফিলিয়েট',
+    path: '/affiliate-programme' 
+  },
+  { 
+    icon: party_img, 
+    label: 'ভিআইপি ক্লাব',
+    path: '/vip-club' 
+  },
+  { 
+    icon: link_img, 
+    label: 'রেফারেল প্রোগ্রাম'
+  },
+  { 
+    icon: question_img,
+    label: 'FAQ/নীতি',
+    path: '/faq-policy' 
+  },
+];
+
+const leftMenuItems = [
+  'আমার অ্যাকাউন্ট',
+  'ডিপোজিট',
+  'উত্তোলন',
+  'বেটিং রেকর্ড',
+  'অ্যাকাউন্ট রেকর্ড',
+  'বন্ধুর আমন্ত্রণ করুন',
+];
+
+const MenuCard = ({ item, onClick }) => {
+  return (
+    <div 
+      onClick={onClick}
+      className="flex items-center gap-4 p-3 bg-gray-800 hover:bg-gray-700 rounded-lg cursor-pointer transition-colors"
+    >
+      <img src={item.icon} alt={item.label} className="w-6 h-6" />
+      <span className="text-white font-medium">{item.label}</span>
+    </div>
+  );
+};
+
+const Popup = ({ onClose, selectedMenu, activeLeftTab, setActiveLeftTab }) => {
+  return (
+    <div className="fixed inset-0 z-[10002] flex items-center justify-center bg-black bg-opacity-70">
+      <div className="bg-gray-800 rounded-lg w-full max-w-4xl h-[80vh] flex overflow-hidden">
+        <div className="w-1/4 bg-gray-900 p-4 border-r border-gray-700">
+          <h3 className="text-white text-lg font-bold mb-4">মেনু</h3>
+          <ul className="space-y-2">
+            {leftMenuItems.map((item, index) => (
+              <li key={index}>
+                <button
+                  onClick={() => setActiveLeftTab(item)}
+                  className={`w-full text-left px-3 py-2 rounded-md ${
+                    activeLeftTab === item 
+                      ? 'bg-theme_color2 text-gray-800' 
+                      : 'text-gray-300 hover:bg-gray-700'
+                  }`}
+                >
+                  {item}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="w-3/4 p-6 relative">
+          <button 
+            onClick={onClose}
+            className="absolute top-4 right-4 text-gray-400 hover:text-white"
+          >
+            <FaTimes className="text-xl" />
+          </button>
+          <h2 className="text-white text-xl font-bold mb-6">{activeLeftTab}</h2>
+          <div className="text-gray-300">
+            {activeLeftTab} content goes here...
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const InvitePopup = ({ onClose }) => {
+  return (
+    <div className="fixed inset-0 z-[10002] flex items-center justify-center bg-black bg-opacity-70">
+      <div className="bg-gray-800 rounded-lg w-full max-w-md p-6 relative">
+        <button 
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-400 hover:text-white"
+        >
+          <FaTimes className="text-xl" />
+        </button>
+        <h2 className="text-white text-xl font-bold mb-4">রেফারেল প্রোগ্রাম</h2>
+        <div className="text-gray-300">
+          Referral program content goes here...
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AuthModal = ({ showAuthModal, closeAuthModal, activeTab, setActiveTab }) => {
+  return (
+    <div className={`fixed inset-0 z-[10001] flex items-center justify-center ${showAuthModal ? '' : 'hidden'}`}>
+      <div className="bg-gray-800 rounded-lg w-full max-w-md p-6">
+        <h2 className="text-white text-xl font-bold mb-4">
+          {activeTab === 'login' ? 'লগইন' : 'নিবন্ধন'}
+        </h2>
+        {/* Auth form content here */}
+        <div className="flex justify-between mt-4">
+          <button 
+            onClick={() => setActiveTab('login')}
+            className={`px-4 py-2 rounded-md ${
+              activeTab === 'login' 
+                ? 'bg-theme_color2 text-gray-800' 
+                : 'bg-gray-700 text-gray-300'
+            }`}
+          >
+            লগইন
+          </button>
+          <button 
+            onClick={() => setActiveTab('register')}
+            className={`px-4 py-2 rounded-md ${
+              activeTab === 'register' 
+                ? 'bg-theme_color2 text-gray-800' 
+                : 'bg-gray-700 text-gray-300'
+            }`}
+          >
+            নিবন্ধন
+          </button>
+        </div>
+        <button 
+          onClick={closeAuthModal}
+          className="mt-4 text-gray-400 hover:text-white"
+        >
+          বন্ধ করুন
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const Sidebar = ({ showPopup, setShowPopup, activeLeftTab, setActiveLeftTab }) => {
+  const [selectedMenu, setSelectedMenu] = useState(null);
+  const [showInvitePopup, setShowInvitePopup] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [activeTab, setActiveTab] = useState('login');
+  const navigate = useNavigate();
+  const { userData } = useUser();
+
+  const handleMenuClick = (item) => {
+    if (item.label === 'রেফারেল প্রোগ্রাম') {
+      if (!userData) {
+        setShowAuthModal(true);
+        setActiveTab('login');
+      } else {
+        setShowInvitePopup(true);
+      }
+    } else if (item.label === 'আমার একাউন্ট' || item.label === 'বোনাস') {
+      if (!userData) {
+        setShowAuthModal(true);
+        setActiveTab('login');
+      } else {
+        setSelectedMenu(item);
+        if (item.leftTab) {
+          setActiveLeftTab(item.leftTab);
+        }
+        setShowPopup(true);
+      }
+    } else if (item.path) {
+      navigate(item.path);
+    } else {
+      setSelectedMenu(item);
+      if (item.leftTab) {
+        setActiveLeftTab(item.leftTab);
+      }
+      setShowPopup(true);
+    }
+  };
+
+  const handleClosePopup = () => {
+    setShowPopup(false);
+    setShowInvitePopup(false);
+    setSelectedMenu(null);
+  };
+
+  const closeAuthModal = () => {
+    setShowAuthModal(false);
+  };
+
+  return (
+    <>
+      <div className="bg-gray-900 w-[330px] border-r border-gray-600 h-full fixed top-[70px] overflow-y-auto no-scrollbar left-0 px-4 py-6">
+        <div className="grid grid-cols-1 gap-4">
+          {menuItems.map((item, index) => (
+            <MenuCard key={index} item={item} onClick={() => handleMenuClick(item)} />
+          ))}
+        </div>
+      </div>
+
+      {showPopup && (
+        <Popup
+          onClose={handleClosePopup}
+          selectedMenu={selectedMenu}
+          activeLeftTab={activeLeftTab}
+          setActiveLeftTab={setActiveLeftTab}
+        />
+      )}
+
+      {showInvitePopup && (
+        <InvitePopup onClose={handleClosePopup} />
+      )}
+
+      {showAuthModal && (
+        <AuthModal 
+          showAuthModal={showAuthModal} 
+          closeAuthModal={closeAuthModal} 
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+        />
+      )}
+    </>
+  );
+};
+
+const Header = ({ setShowPopup, setActiveLeftTab, showPopup, activeLeftTab }) => {
+  const { userData, loading, error, fetchUserData } = useUser();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [language, setLanguage] = useState({
     code: 'bn',
     name: 'বাংলা',
@@ -52,21 +330,91 @@ const Header = () => {
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [activeNav, setActiveNav] = useState('home');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userData, setUserData] = useState(null);
+  const [userdata, setUserData] = useState([]);
   const [formData, setFormData] = useState({
-    username: '',
+    email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    referralCode: ''
   });
   const [errors, setErrors] = useState({
-    username: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    email: '',
+    formError: ''
   });
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otpEmail, setOtpEmail] = useState('');
+  const [otpRequested, setOtpRequested] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+  const [referralCodeValid, setReferralCodeValid] = useState(false);
+  const [referralCodeChecking, setReferralCodeChecking] = useState(false);
+  const [referralCodeError, setReferralCodeError] = useState('');
+  const [referrerInfo, setReferrerInfo] = useState(null);
+  const otpInputRefs = useRef([]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const referralCode = params.get('refer_code');
+    
+    if (referralCode) {
+      setShowAuthModal(true);
+      setActiveTab('register');
+      setFormData(prev => ({
+        ...prev,
+        referralCode: referralCode
+      }));
+      checkReferralCode(referralCode);
+    }
+  }, [location]);
 
   const languages = [
     { code: 'bn', name: 'বাংলা', flag: 'https://images.5849492029.com//TCG_PROD_IMAGES/COUNTRY_FLAG/CIRCLE/BD.svg' },
     { code: 'en', name: 'English', flag: 'https://images.5849492029.com//TCG_PROD_IMAGES/COUNTRY_FLAG/CIRCLE/US.svg' }
+  ];
+
+  const navItems = [
+    { 
+      id: 'home', 
+      label: 'হোম', 
+      path: '/',
+      icon: <FaHome className="w-5 h-5" />, 
+      activeIcon: <FaHome className="w-5 h-5 text-yellow-400" />,
+      requiresAuth: false
+    },
+    { 
+      id: 'slots', 
+      label: 'স্লটস', 
+      path: '/slots',
+      icon: <FaDice className="w-5 h-5" />, 
+      activeIcon: <FaDice className="w-5 h-5 text-yellow-400" />,
+      requiresAuth: true
+    },
+    { 
+      id: 'casino', 
+      label: 'ক্যাসিনো', 
+      path: '/casino',
+      icon: <FaCoins className="w-5 h-5" />, 
+      activeIcon: <FaCoins className="w-5 h-5 text-yellow-400" />,
+      requiresAuth: true
+    },
+    { 
+      id: 'refer', 
+      label: 'রেফার', 
+      path: '/refer-programme',
+      icon: <FaUserFriends className="w-5 h-5" />, 
+      activeIcon: <FaUserFriends className="w-5 h-5 text-blue-400" />,
+      requiresAuth: true
+    },
+    { 
+      id: 'profile', 
+      label: 'প্রোফাইল', 
+      path: '/profile',
+      icon: <FaUser className="w-5 h-5" />, 
+      activeIcon: <FaUser className="w-5 h-5 text-blue-400" />,
+      requiresAuth: true
+    },
   ];
 
   useEffect(() => {
@@ -76,8 +424,17 @@ const Header = () => {
     if (token && storedUser) {
       setIsAuthenticated(true);
       setUserData(JSON.parse(storedUser));
+      fetchUserData();
     }
   }, []);
+
+  useEffect(() => {
+    let timer;
+    if (countdown > 0) {
+      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [countdown]);
 
   const toggleDropdown = () => setShowDropdown(!showDropdown);
   const selectLanguage = (lang) => {
@@ -88,17 +445,25 @@ const Header = () => {
   const openAuthModal = (tab) => {
     setShowAuthModal(true);
     setActiveTab(tab);
-    setFormData({ username: '', password: '', confirmPassword: '' });
-    setErrors({ username: '', password: '', confirmPassword: '' });
+    setFormData({ email: '', password: '', confirmPassword: '', referralCode: '' });
+    setErrors({ password: '', confirmPassword: '', email: '', formError: '' });
+    setReferralCodeValid(false);
+    setReferralCodeError('');
+    setReferrerInfo(null);
   };
 
   const closeModal = () => {
     setShowAuthModal(false);
+    setShowOtpModal(false);
     setErrors({
-      username: '',
       password: '',
-      confirmPassword: ''
+      confirmPassword: '',
+      email: '',
+      formError: ''
     });
+    setReferralCodeValid(false);
+    setReferralCodeError('');
+    setReferrerInfo(null);
   };
 
   const toggleSidebar = () => {
@@ -113,6 +478,36 @@ const Header = () => {
     setProfileDropdownOpen(!profileDropdownOpen);
   };
 
+  const checkReferralCode = async (code) => {
+    if (!code) {
+      setReferralCodeValid(false);
+      setReferralCodeError('');
+      setReferrerInfo(null);
+      return;
+    }
+
+    setReferralCodeChecking(true);
+    try {
+      const response = await axios.get(`${API_BASE_URL}/auth/check-referral-code/${code}`);
+      console.log(response)
+      if (response.data.exists) {
+        setReferralCodeValid(true);
+        setReferralCodeError('');
+        setReferrerInfo(response.data.referrer);
+      } else {
+        setReferralCodeValid(false);
+        setReferralCodeError('অবৈধ রেফারেল কোড');
+        setReferrerInfo(null);
+      }
+    } catch (error) {
+      setReferralCodeValid(false);
+      setReferralCodeError('রেফারেল কোড চেক করতে সমস্যা হয়েছে');
+      setReferrerInfo(null);
+    } finally {
+      setReferralCodeChecking(false);
+    }
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({
@@ -120,45 +515,70 @@ const Header = () => {
       [name]: value
     });
     
-    if (errors[name]) {
+    if (errors[name] || errors.formError) {
       setErrors({
         ...errors,
-        [name]: ''
+        [name]: '',
+        formError: ''
       });
+    }
+
+    if (name === 'referralCode') {
+      checkReferralCode(value);
+    }
+  };
+
+  const handleOtpChange = (index, value) => {
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+
+    if (value && index < 5) {
+      otpInputRefs.current[index + 1].focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index, e) => {
+    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+      otpInputRefs.current[index - 1].focus();
     }
   };
 
   const validateForm = () => {
     let valid = true;
     const newErrors = {
-      username: '',
       password: '',
-      confirmPassword: ''
+      confirmPassword: '',
+      email: '',
+      formError: ''
     };
 
-    if (!formData.username.trim()) {
-      newErrors.username = 'ব্যবহারকারীর নাম প্রয়োজন';
+    if (!formData.email) {
+      newErrors.email = 'ইমেইল প্রয়োজন';
       valid = false;
-    } else if (formData.username.length < 4) {
-      newErrors.username = 'ব্যবহারকারীর নাম কমপক্ষে ৪ অক্ষর হতে হবে';
+    } else if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
+      newErrors.email = 'সঠিক ইমেইল দিন';
       valid = false;
     }
 
-    if (activeTab === 'login' || activeTab === 'register') {
-      if (!formData.password) {
-        newErrors.password = 'পাসওয়ার্ড প্রয়োজন';
-        valid = false;
-      } else if (formData.password.length < 6) {
-        newErrors.password = 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষর হতে হবে';
-        valid = false;
-      }
+    if ((activeTab === 'login' || activeTab === 'register' || activeTab === 'reset-password') && !formData.password) {
+      newErrors.password = 'পাসওয়ার্ড প্রয়োজন';
+      valid = false;
+    } else if ((activeTab === 'login' || activeTab === 'register' || activeTab === 'reset-password') && formData.password.length < 6) {
+      newErrors.password = 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষর হতে হবে';
+      valid = false;
     }
 
-    if (activeTab === 'register') {
+    if (activeTab === 'register' || activeTab === 'reset-password') {
       if (formData.password !== formData.confirmPassword) {
         newErrors.confirmPassword = 'পাসওয়ার্ড মিলছে না';
         valid = false;
       }
+    }
+
+    if (activeTab === 'register' && formData.referralCode && !referralCodeValid) {
+      newErrors.formError = 'অবৈধ রেফারেল কোড';
+      valid = false;
     }
 
     setErrors(newErrors);
@@ -170,7 +590,7 @@ const Header = () => {
 
     try {
       const response = await axios.post(`${API_BASE_URL}/auth/login`, {
-        username: formData.username,
+        email: formData.email,
         password: formData.password
       });
 
@@ -183,18 +603,31 @@ const Header = () => {
       setUserData(user);
       closeModal();
       toast.success('সফলভাবে লগইন করা হয়েছে!');
+      navigate("/");
+      window.location.reload();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'লগইন করতে সমস্যা হয়েছে');
+      setErrors({
+        ...errors,
+        formError: error.response?.data?.message || 'লগইন করতে সমস্যা হয়েছে'
+      });
     }
   };
 
   const handleRegister = async () => {
     if (!validateForm()) return;
+    if (formData.referralCode && !referralCodeValid) {
+      setErrors({
+        ...errors,
+        formError: 'অবৈধ রেফারেল কোড'
+      });
+      return;
+    }
 
     try {
       const response = await axios.post(`${API_BASE_URL}/auth/signup`, {
-        username: formData.username,
-        password: formData.password
+        email: formData.email,
+        password: formData.password,
+        referralCode: formData.referralCode
       });
 
       const { token, user } = response.data;
@@ -206,37 +639,111 @@ const Header = () => {
       setUserData(user);
       closeModal();
       toast.success('সফলভাবে নিবন্ধন করা হয়েছে!');
+      navigate("/");
+      window.location.reload();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'নিবন্ধন করতে সমস্যা হয়েছে');
+      setErrors({
+        ...errors,
+        formError: error.response?.data?.message || 'নিবন্ধন করতে সমস্যা হয়েছে'
+      });
     }
   };
 
-  const handleOneClickRegister = async () => {
-    if (!formData.username.trim()) {
-      setErrors({
-        username: 'ব্যবহারকারীর নাম প্রয়োজন',
-        password: '',
-        confirmPassword: ''
+  const handleForgotPassword = async () => {
+    if (!validateForm()) return;
+
+    try {
+      const response = await axios.post(`${API_BASE_URL}/auth/request-password-reset`, {
+        email: formData.email
       });
+
+      setOtpEmail(formData.email);
+      setShowOtpModal(true);
+      setOtpRequested(true);
+      setCountdown(60);
+      toast.success('OTP ইমেইলে পাঠানো হয়েছে');
+    } catch (error) {
+      setErrors({
+        ...errors,
+        formError: error.response?.data?.message || 'পাসওয়ার্ড রিসেট করতে সমস্যা হয়েছে'
+      });
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    const otpCode = otp.join('');
+    
+    if (otpCode.length !== 6) {
+      toast.error('সম্পূর্ণ OTP দিন');
       return;
     }
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/auth/oneclick`, {
-        username: formData.username
+      const response = await axios.post(`${API_BASE_URL}/auth/verify-reset-otp`, {
+        email: otpEmail,
+        otp: otpCode
       });
 
-      const { token, user } = response.data;
+      const { resetToken } = response.data;
       
+      localStorage.setItem('resetToken', resetToken);
+      
+      setActiveTab('reset-password');
+      setShowOtpModal(false);
+      setOtp(['', '', '', '', '', '']);
+      toast.success('OTP সফলভাবে যাচাই করা হয়েছে');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'OTP যাচাই করতে সমস্যা হয়েছে');
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!validateForm()) return;
+
+    try {
+      const resetToken = localStorage.getItem('resetToken');
+      
+      const response = await axios.post(`${API_BASE_URL}/auth/reset-password`, {
+        resetToken,
+        newPassword: formData.password
+      });
+
+      localStorage.removeItem('resetToken');
+      closeModal();
+      toast.success('পাসওয়ার্ড সফলভাবে রিসেট করা হয়েছে');
+      
+      const loginResponse = await axios.post(`${API_BASE_URL}/auth/login`, {
+        email: response.data.user.email,
+        password: formData.password
+      });
+
+      const { token, user } = loginResponse.data;
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
-      
       setIsAuthenticated(true);
       setUserData(user);
-      closeModal();
-      toast.success('সফলভাবে এক ক্লিকে নিবন্ধন করা হয়েছে!');
+      navigate("/");
+      window.location.reload();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'নিবন্ধন করতে সমস্যা হয়েছে');
+      setErrors({
+        ...errors,
+        formError: error.response?.data?.message || 'পাসওয়ার্ড রিসেট করতে সমস্যা হয়েছে'
+      });
+    }
+  };
+
+  const resendOtp = async () => {
+    if (countdown > 0) return;
+
+    try {
+      await axios.post(`${API_BASE_URL}/auth/request-password-reset`, {
+        email: otpEmail
+      });
+
+      setCountdown(60);
+      toast.success('নতুন OTP ইমেইলে পাঠানো হয়েছে');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'OTP পুনরায় পাঠাতে সমস্যা হয়েছে');
     }
   };
 
@@ -247,89 +754,121 @@ const Header = () => {
     setUserData(null);
     setProfileDropdownOpen(false);
     toast.success('সফলভাবে লগআউট করা হয়েছে');
+    navigate("/");
+    window.location.reload();
+  };
+
+  const handleDepositClick = () => {
+    setActiveLeftTab('ডিপোজিট');
+    setShowPopup(true);
+  };
+
+  const handleWithdrawClick = () => {
+    setActiveLeftTab('উত্তোলন');
+    setShowPopup(true);
+  };
+
+  const handleProfileClick = () => {
+    setActiveLeftTab('আমার অ্যাকাউন্ট');
+    setShowPopup(true);
+  };
+
+  const handleTransactionClick = () => {
+    setActiveLeftTab('অ্যাকাউন্ট রেকর্ড');
+    setShowPopup(true);
+  };
+
+  const handleWalletClick = () => {
+    setActiveLeftTab('আমার অ্যাকাউন্ট');
+    setShowPopup(true);
   };
 
   const menuItems = [
     { icon: <FaFire className="text-yellow-400" />, label: 'গরম খেলা', link: '/hot-games' },
     { icon: <FaUserFriends className="text-blue-400" />, label: 'বন্ধুর আমন্ত্রণ', link: '/invite-friends' },
-    { icon: <FaGift2 className="text-purple-400" />, label: 'অফার', link: '/offers' },
-    { icon: <FaChartBar className="text-green-400" />, label: 'চার্ট', link: '/charts' },
     { icon: <FaMedal className="text-yellow-500" />, label: 'পুরস্কার কেন্দ্র', link: '/rewards-center' },
     { icon: <FaFutbol className="text-red-400" />, label: 'লাইভ', link: '/live' },
-    { icon: <FaMoneyBillWave className="text-emerald-400" />, label: 'ম্যানুয়াল রিচার্জ', link: '/manual-recharge' },
-    { icon: <FaHandHoldingHeart className="text-pink-400" />, label: 'পয়েন্ট', link: '/points' },
-    { icon: <FaGem className="text-cyan-400" />, label: 'ডায়মন্ড', link: '/diamonds' },
-    { icon: <FaCrosshairs className="text-orange-400" />, label: 'ফাংশন', link: '/functions' },
     { icon: <FaBullseye className="text-red-500" />, label: 'মিশন', link: '/missions' },
     { icon: <FaHandsHelping className="text-blue-300" />, label: 'স্পোর্টস', link: '/sports' },
-    { icon: <FaFlag className="text-green-500" />, label: 'বাংলা', link: '/language' },
     { icon: <FaGamepad className="text-purple-500" />, label: 'ই-স্পোর্টস', link: '/esports' },
-    { icon: <FaDownload className="text-indigo-400" />, label: 'এপ্লিকেশন ডাউনলোড', link: '/download' },
-    { icon: <FaThLarge className="text-gray-300" />, label: 'নভিগেশন', link: '/navigation' },
     { icon: <FaHeadset2 className="text-teal-400" />, label: 'গ্রাহক সেবা', link: '/customer-support' },
   ];
 
   const profileMenuItems = [
-    { icon: <FaUser className="text-blue-400" />, label: 'প্রোফাইল', path: '/profile' },
-    { icon: <FaWallet className="text-blue-400" />, label: 'ওয়ালেট', path: '/wallet' },
-    { icon: <FaHistory className="text-blue-400" />, label: 'লেনদেনের ইতিহাস', path: '/transactions' },
-    { icon: <FaUserCog className="text-blue-400" />, label: 'অ্যাকাউন্ট সেটিংস', path: '/settings' },
-    { icon: <FaCog className="text-blue-400" />, label: 'সেটিংস', path: '/settings' },
+    { 
+      icon: <FaUser className="text-blue-400" />, 
+      label: 'প্রোফাইল', 
+      path: '/profile', 
+      onClick: () => {
+        setActiveLeftTab('আমার অ্যাকাউন্ট');
+        setShowPopup(true);
+        setProfileDropdownOpen(false);
+      }
+    },
+    { 
+      icon: <FaWallet className="text-blue-400" />, 
+      label: 'ওয়ালেট', 
+      path: '/wallet', 
+      onClick: () => {
+        setActiveLeftTab('আমার অ্যাকাউন্ট');
+        setShowPopup(true);
+        setProfileDropdownOpen(false);
+      }
+    },
+    { 
+      icon: <FaHistory className="text-blue-400" />, 
+      label: 'লেনদেনের ইতিহাস', 
+      path: '/transactions', 
+      onClick: () => {
+        setActiveLeftTab('অ্যাকাউন্ট রেকর্ড');
+        setShowPopup(true);
+        setProfileDropdownOpen(false);
+      }
+    },
     { icon: <FaSignOutAlt className="text-red-400" />, label: 'লগ আউট', path: '/logout', onClick: handleLogout }
   ];
 
-  const navItems = [
-    { id: 'home', icon: <FaHome className="text-xl" />, label: 'হোম', link: '/' },
-    { id: 'promotions', icon: <FaGift className="text-xl" />, label: 'প্রোমো', link: '/promotions' },
-    { id: 'deposit', icon: <FaMoneyBillAlt className="text-xl" />, label: 'ডিপোজিট', link: '/deposit' },
-    { id: 'rewards', icon: <FaTrophy className="text-xl" />, label: 'রিওয়ার্ড', link: '/my-account' }
-  ];
+  const handleNavItemClick = (item) => (e) => {
+    if (item.requiresAuth && !isAuthenticated) {
+      e.preventDefault();
+      openAuthModal('register');
+    }
+  };
+
+  const profileImages = [man, man1, man2, man3, man4, man5, man6];
+
+  const getProfileImage = (username) => {
+    if (!username) return man;
+    
+    let hash = 0;
+    for (let i = 0; i < username.length; i++) {
+      hash = username.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    
+    const index = Math.abs(hash) % profileImages.length;
+    return profileImages[index];
+  };
 
   return (
     <>
       <header className="bg-gray-900 sticky top-0 left-0 px-3 md:px-8 py-2 md:py-3 z-[10000] flex items-center justify-between shadow-lg border-b border-gray-700">
-        <div className="flex items-center space-x-2">
-          <button onClick={toggleSidebar} className="text-gray-300 hover:text-blue-400 transition-colors text-[22px] md:text-[27px]">
+        <div className="flex items-center md:space-x-2">
+          <button onClick={toggleSidebar} className="text-gray-300 cursor-pointer hover:text-blue-400 transition-colors text-[26px] md:text-[27px]">
             <RiMenuFold2Line />
           </button>
-        <img className='w-[150px]' src={logo} alt="" />
+          <NavLink to="/">
+            <img className='w-[100px] md:w-[150px]' src={logo} alt="" />
+          </NavLink>
         </div>
-        <Toaster position="top-right" toastOptions={{
+        <Toaster toastOptions={{
           style: {
             background: '#1f2937',
             color: '#fff',
             border: '1px solid #374151'
           }
         }} />
-        <div className="flex items-center space-x-1 md:space-x-4">
-          <div className="hidden md:block relative">
-            <button
-              onClick={toggleDropdown}
-              className="flex items-center bg-gray-800 hover:bg-gray-700 cursor-pointer text-gray-200 font-medium px-2 md:px-3 py-1 md:py-2 rounded-md shadow-sm text-sm md:text-base transition-colors border border-gray-700"
-            >
-              <img className='w-[18px] md:w-[20px] mr-1' src={language.flag} alt="" />
-              <span className="hidden sm:inline">{language.name}</span>
-              <MdArrowDropDown className={`ml-1 text-lg transform transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
-            </button>
-            {showDropdown && (
-              <div className="absolute right-0 mt-2 w-40 bg-gray-800 rounded-md shadow-lg z-50 border border-gray-700">
-                {languages.map((lang) => (
-                  <button
-                    key={lang.code}
-                    onClick={() => selectLanguage(lang)}
-                    className={`flex items-center w-full text-left px-4 py-2 text-sm hover:bg-gray-700 ${
-                      language.code === lang.code ? 'bg-gray-700 font-medium' : ''
-                    }`}
-                  >
-                    <img className='w-[20px] mr-2' src={lang.flag} alt="" />
-                    <span className="text-gray-200">{lang.name}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          
-          <div className="flex items-center space-x-2 md:space-x-4">
+        <div className="flex items-center md:space-x-4">
+          <div className="flex items-center md:space-x-4">
             {!isAuthenticated ? (
               <>
                 <button 
@@ -350,14 +889,15 @@ const Header = () => {
                 <div className="relative">
                   <button 
                     onClick={toggleProfileDropdown}
-                    className="px-[15px] py-[8px] cursor-pointer border-[1px] border-gray-700 rounded-[5px] flex justify-center items-center gap-2"
+                    className="px-[15px] py-[8px] md:flex hidden cursor-pointer border-[1px] border-gray-700 rounded-[5px] justify-center items-center gap-2"
                   >
                     <img
-                      src={userData?.avatar || "https://images.5943920202.com//TCG_PROD_IMAGES/B2C/01_PROFILE/PROFILE/0.png"}
+                      src={getProfileImage(userData?.username)}
                       alt="Profile"
-                      className="w-5 h-5 md:w-6 md:h-6 rounded-full border-2 border-blue-500"
+                      className="w-5 h-5 md:w-7 md:h-7 rounded-full border-2 border-blue-500"
                     />
-                     <span className="text-white font-medium">{userData?.username || 'User'}</span>
+                    
+                    <span className="text-white font-medium">{userData?.username || 'User'}</span>
                     <MdArrowDropDown className={`text-base md:text-lg ml-1 text-gray-300 transition-transform ${profileDropdownOpen ? 'rotate-180' : ''}`} />
                   </button>
 
@@ -366,7 +906,7 @@ const Header = () => {
                       <div className="relative bg-gray-800 rounded-lg overflow-hidden transform-style-preserve-3d transition-all duration-300 group-hover:rotate-x-10">
                         <div className="px-4 py-3 bg-gray-900 border-b border-gray-700 flex items-center">
                           <img
-                            src={userData?.avatar || "https://images.5943920202.com//TCG_PROD_IMAGES/B2C/01_PROFILE/PROFILE/0.png"}
+                            src={getProfileImage(userData?.username)}
                             alt="Profile"
                             className="w-10 h-10 rounded-full border-2 border-blue-500 mr-3"
                           />
@@ -382,10 +922,11 @@ const Header = () => {
                               <a
                                 href={item.path}
                                 onClick={(e) => {
+                                  e.preventDefault();
                                   if (item.onClick) {
-                                    e.preventDefault();
                                     item.onClick();
                                   }
+                                  setProfileDropdownOpen(false);
                                 }}
                                 className="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-700 transition-colors duration-200"
                               >
@@ -406,17 +947,23 @@ const Header = () => {
                   )}
                 </div>
 
-                <div className="flex items-center bg-gray-800 cursor-pointer px-[15px] py-[10px] border-[1px] border-gray-700 rounded-[5px] ">
-                  <FaMoneyBillWave className="text-yellow-400 mr-1 text-xs md:text-sm" />
+                <div className="flex items-center bg-gray-800 cursor-pointer px-[15px] py-[7px] md:py-[10px] border-[1px] border-gray-700 rounded-[5px] ">
+                  <FaMoneyBillWave className="text-yellow-400 md:flex hidden mr-1 text-xs md:text-sm" />
                   <span className="text-white text-xs md:text-sm font-semibold">৳ {userData?.balance?.toFixed(2) || '0.00'}</span>
                   <FaSyncAlt className="text-gray-400 ml-1 md:ml-2 text-xs md:text-sm cursor-pointer hover:text-blue-400 transition-colors" />
                 </div>
 
-                <button className="px-[15px] py-[8px] bg-theme_color2  text-gray-700 cursor-pointer rounded-[5px]">
+                <button 
+                  onClick={handleDepositClick}
+                  className="px-[15px] py-[8px] bg-theme_color2 hidden md:block text-gray-700 cursor-pointer rounded-[5px]"
+                >
                   ডিপোজিট
                 </button>
 
-                <button className="px-[15px] py-[8px] bg-[#3867d6] text-white cursor-pointer rounded-[5px]">
+                <button 
+                  onClick={handleWithdrawClick}
+                  className="px-[15px] py-[8px] md:block hidden bg-[#3867d6] text-white cursor-pointer rounded-[5px]"
+                >
                   উত্তোলন
                 </button>
               </>
@@ -425,22 +972,28 @@ const Header = () => {
         </div>
       </header>
 
+      <Sidebar 
+        showPopup={showPopup} 
+        setShowPopup={setShowPopup} 
+        activeLeftTab={activeLeftTab} 
+        setActiveLeftTab={setActiveLeftTab} 
+      />
+
       {sidebarOpen && (
         <div 
           className="fixed inset-0 bg-[rgba(0,0,0,0.7)] z-[9999] md:hidden" 
           onClick={closeSidebar}
         />
       )}
-
       <div className={`fixed inset-0 z-[10000] transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:hidden`}>
         <div className="bg-gray-900 h-full w-4/5 max-w-xs overflow-y-auto border-r border-gray-800">
           <div className="p-4 flex items-center justify-between border-b border-gray-800">
             <h2 className="text-white text-xl font-bold">Menu</h2>
             <button 
               onClick={closeSidebar}
-              className="text-gray-400 hover:text-white transition-colors"
+              className="text-gray-400 hover:text-white text-[22px] cursor-pointer transition-colors"
             >
-              <FaTimes />
+              <IoClose />
             </button>
           </div>
           
@@ -449,11 +1002,7 @@ const Header = () => {
               <a
                 key={index}
                 href={item.link}
-                className="bg-gray-800 hover:bg-gray-700 transition-all duration-300 text-white rounded-lg py-4 flex flex-col items-center justify-center cursor-pointer 
-                shadow-[0_4px_0_#1f2937]
-                hover:shadow-[0_4px_0_#1f2937,inset_0_2px_8px_rgba(255,255,255,0.1)]
-                active:shadow-[0_1px_0_#1f2937]
-                active:translate-y-1 border border-gray-700"
+                className="bg-gray-800 hover:bg-gray-700 transition-all duration-300 border-[1px] border-gray-700 text-white rounded-lg py-4 flex flex-col items-center justify-center cursor-pointer"
                 onClick={closeSidebar}
               >
                 <div className="text-xl mb-1">
@@ -468,7 +1017,7 @@ const Header = () => {
         </div>
       </div>
 
-      <div className="fixed right-4 bottom-24 md:bottom-6 z-[9998] flex flex-col space-y-3">
+      <div className="fixed right-4 bottom-40 md:bottom-40 z-[9998] flex flex-col space-y-3">
         <a href="#" className="relative group">
           <div className="bg-[#0088cc] hover:bg-[#00a2e6] text-white p-3 rounded-full shadow-[0_4px_0_#006699] hover:shadow-[0_6px_0_#006699] active:shadow-[0_2px_0_#006699] active:translate-y-[2px] transition-all duration-150 flex items-center justify-center w-12 h-12">
             <FaTelegram className="text-xl" />
@@ -486,46 +1035,37 @@ const Header = () => {
             Facebook
           </span>
         </a>
-
-        <a href="#" className="relative group">
-          <div className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white p-3 rounded-full shadow-[0_4px_0_#4c1d95] hover:shadow-[0_6px_0_#4c1d95] active:shadow-[0_2px_0_#4c1d95] active:translate-y-[2px] transition-all duration-150 flex items-center justify-center w-12 h-12">
-            <FaHeadset className="text-xl" />
-          </div>
-          <span className="absolute right-full top-1/2 transform -translate-y-1/2 mr-2 bg-gray-800 text-white text-xs font-medium px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap border border-gray-700">
-            Support
-          </span>
-        </a>
       </div>
 
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-gray-900 border-t-2 border-blue-500 z-[9999] shadow-[0_-4px_10px_rgba(0,0,0,0.3)]">
-        <div className="flex justify-around relative">
-          <div 
-            className={`absolute bottom-0 h-full bg-gradient-to-r from-blue-600 to-purple-600 transition-all duration-300 ease-out rounded-t-lg border-t-2 border-blue-400`}
-            style={{
-              width: `${100 / navItems.length}%`,
-              left: `${navItems.findIndex(item => item.id === activeNav) * (100 / navItems.length)}%`
-            }}
-          ></div>
-          
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-gray-800 dark:bg-gray-900 border-t border-gray-700 dark:border-gray-700 z-50 shadow-xl">
+        <div className="flex relative">
           {navItems.map((item) => (
-            <a
+            <NavLink
               key={item.id}
-              href={item.link}
-              onClick={() => setActiveNav(item.id)}
-              className={`flex flex-col items-center justify-center py-3 px-2 w-full relative z-10 ${
-                activeNav === item.id ? 'text-white' : 'text-gray-400'
-              }`}
+              to={item.path}
+              onClick={handleNavItemClick(item)}
+              className={({ isActive }) => 
+                `flex-1 flex flex-col items-center justify-center py-3 hover:text-theme_color2 px-2 relative transition-all duration-200 ${
+                  isActive 
+                    ? 'text-theme_color2' 
+                    : 'text-white'
+                }`
+              }
             >
-              <div className={`text-xl mb-1 transition-all duration-200 ${
-                activeNav === item.id ? 'scale-110' : 'scale-100'
-              }`}>
-                {item.icon}
-              </div>
-              <span className="text-xs font-medium">{item.label}</span>
-            </a>
+              {({ isActive }) => (
+                <>
+                  <div className={`relative transition-transform duration-200 ${
+                    isActive ? 'scale-110' : 'scale-100'
+                  }`}>
+                    {isActive ? item.activeIcon : item.icon}
+                  </div>
+                  <span className="text-xs font-medium mt-1">{item.label}</span>
+                </>
+              )}
+            </NavLink>
           ))}
         </div>
-      </div>
+      </nav>
 
       {showAuthModal && (
         <div className="fixed inset-0 z-[10001] flex items-center justify-center bg-[rgba(0,0,0,0.8)] p-4">
@@ -534,7 +1074,8 @@ const Header = () => {
               <h2 className="text-white text-xl font-bold">
                 {activeTab === 'login' && 'লগইন করুন'}
                 {activeTab === 'register' && 'নিবন্ধন করুন'}
-                {activeTab === 'oneclick' && 'এক ক্লিকে নিবন্ধন'}
+                {activeTab === 'forgot-password' && 'পাসওয়ার্ড রিসেট করুন'}
+                {activeTab === 'reset-password' && 'নতুন পাসওয়ার্ড সেট করুন'}
               </h2>
               <button 
                 onClick={closeModal}
@@ -545,47 +1086,40 @@ const Header = () => {
             </div>
 
             <div className="flex border-b border-gray-700">
-              <button
-                onClick={() => setActiveTab('login')}
-                className={`flex-1 py-3 text-sm md:text-base font-medium cursor-pointer ${
-                  activeTab === 'login' ? 'text-theme_color2 border-b-2 border-theme_color2' : 'text-gray-400'
-                }`}
-              >
-                লগইন
-              </button>
-              <button
-                onClick={() => setActiveTab('register')}
-                className={`flex-1 py-3 text-sm md:text-base font-medium cursor-pointer ${
-                  activeTab === 'register' ? 'text-theme_color2 border-b-2 border-theme_color2' : 'text-gray-400'
-                }`}
-              >
-                নিবন্ধন
-              </button>
-              <button
-                onClick={() => setActiveTab('oneclick')}
-                className={`flex-1 py-3 text-sm md:text-base font-medium cursor-pointer ${
-                  activeTab === 'oneclick' ? 'text-theme_color2 border-b-2 border-theme_color2' : 'text-gray-400'
-                }`}
-              >
-                এক ক্লিকে
-              </button>
+              {['login', 'register'].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`flex-1 py-3 text-sm md:text-base font-medium cursor-pointer ${
+                    activeTab === tab ? 'text-theme_color2 border-b-2 border-theme_color2' : 'text-gray-400'
+                  }`}
+                >
+                  {tab === 'login' ? 'লগইন' : 'নিবন্ধন'}
+                </button>
+              ))}
             </div>
 
             <div className="p-6">
+              {errors.formError && (
+                <div className="mb-4 p-3 bg-red-900/50 border border-red-700 rounded-md text-red-300 text-sm">
+                  {errors.formError}
+                </div>
+              )}
+
               {activeTab === 'login' && (
                 <div className="space-y-4">
                   <div className="relative">
-                    <FaUser className="absolute left-3 top-3 text-theme_color2 text-sm md:text-base" />
+                    <MdEmail className="absolute left-3 top-3 text-theme_color2 text-sm md:text-base" />
                     <input
-                      type="text"
-                      name="username"
-                      value={formData.username}
+                      type="email"
+                      name="email"
+                      value={formData.email}
                       onChange={handleInputChange}
-                      placeholder="ব্যবহারকারীর নাম"
-                      className={`w-full bg-gray-700 text-white border ${errors.username ? 'border-red-500' : 'border-gray-600'} py-2 pl-10 pr-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base placeholder-gray-400`}
+                      placeholder="ইমেইল"
+                      className={`w-full bg-gray-700 text-white border ${errors.email ? 'border-red-500' : 'border-gray-600'} py-2 pl-10 pr-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base placeholder-gray-400`}
                     />
-                    {errors.username && (
-                      <p className="text-red-400 text-xs mt-1">{errors.username}</p>
+                    {errors.email && (
+                      <p className="text-red-400 text-xs mt-1">{errors.email}</p>
                     )}
                   </div>
 
@@ -615,32 +1149,35 @@ const Header = () => {
                       <input type="checkbox" id="remember" className="mr-2 accent-blue-500" />
                       <label htmlFor="remember">মনে রাখুন</label>
                     </div>
-                    <a href="#" className="text-theme_color2 hover:underline">পাসওয়ার্ড ভুলে গেছেন?</a>
+                    <button 
+                      onClick={() => setActiveTab('forgot-password')}
+                      className="text-theme_color2 hover:underline cursor-pointer"
+                    >
+                      পাসওয়ার্ড ভুলে গেছেন?
+                    </button>
                   </div>
 
                   <button 
                     onClick={handleLogin}
-                    className="w-full bg-theme_color2 hover:bg-theme_color2/90 px-[20px] py-[10px] rounded-[5px] "
+                    className="w-full bg-theme_color2 hover:bg-theme_color2/90 cursor-pointer px-[20px] py-[10px] rounded-[5px] "
                   >
                     লগইন করুন
                   </button>
                 </div>
-              )}
-
-              {activeTab === 'register' && (
+              )}                            {activeTab === 'register' && (
                 <div className="space-y-4">
                   <div className="relative">
-                    <FaUser className="absolute left-3 top-3 text-theme_color2 text-sm md:text-base" />
+                    <MdEmail className="absolute left-3 top-3 text-theme_color2 text-sm md:text-base" />
                     <input
-                      type="text"
-                      name="username"
-                      value={formData.username}
+                      type="email"
+                      name="email"
+                      value={formData.email}
                       onChange={handleInputChange}
-                      placeholder="ব্যবহারকারীর নাম"
-                      className={`w-full bg-gray-700 text-white border ${errors.username ? 'border-red-500' : 'border-gray-600'} py-2 pl-10 pr-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base placeholder-gray-400`}
+                      placeholder="ইমেইল"
+                      className={`w-full bg-gray-700 text-white border ${errors.email ? 'border-red-500' : 'border-gray-600'} py-2 pl-10 pr-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base placeholder-gray-400`}
                     />
-                    {errors.username && (
-                      <p className="text-red-400 text-xs mt-1">{errors.username}</p>
+                    {errors.email && (
+                      <p className="text-red-400 text-xs mt-1">{errors.email}</p>
                     )}
                   </div>
 
@@ -686,70 +1223,220 @@ const Header = () => {
                     )}
                   </div>
 
-                  <div className="flex items-start text-xs md:text-sm space-x-2 text-blue-400">
-                    <input type="checkbox" className="mt-1 accent-theme_color2" required />
-                    <p>আমি ১৮ বছর পূর্ণ এবং গ্রহণ করতে সম্মত <a className="text-blue-300 hover:underline" href="#">ব্যবহারের শর্ত</a></p>
+                  <div className="relative">
+                    <FaUserFriends className="absolute left-3 top-3 text-theme_color2 text-sm md:text-base" />
+                    <input
+                      type="text"
+                      name="referralCode"
+                      value={formData.referralCode}
+                      onChange={handleInputChange}
+                      placeholder="রেফারেল কোড (ঐচ্ছিক)"
+                      className="w-full bg-gray-700 text-white border border-gray-600 py-2 pl-10 pr-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base placeholder-gray-400"
+                    />
+                    {referralCodeChecking && (
+                      <div className="absolute right-3 top-3">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-theme_color2"></div>
+                      </div>
+                    )}
+                    {referralCodeError && !referralCodeChecking && (
+                      <p className="text-red-400 text-xs mt-1">{referralCodeError}</p>
+                    )}
+                    {referrerInfo && !referralCodeChecking && (
+                      <p className="text-green-400 text-xs mt-1">
+                        রেফারার: {referrerInfo.username}
+                      </p>
+                    )}
                   </div>
 
                   <button 
                     onClick={handleRegister}
-                    className="w-full bg-theme_color2 hover:bg-theme_color2/90 px-[20px] py-[10px] rounded-[5px] "
+                    disabled={formData.referralCode && !referralCodeValid}
+                    className={`w-full bg-theme_color2 hover:bg-theme_color2/90 cursor-pointer px-[20px] py-[10px] rounded-[5px] ${
+                      formData.referralCode && !referralCodeValid ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
                   >
                     নিবন্ধন করুন
                   </button>
 
-                  <div className="text-center text-xs md:text-sm text-theme_color2">
-                    ইতিমধ্যে অ্যাকাউন্ট আছে?{' '}
-                    <button 
-                      onClick={() => setActiveTab('login')} 
-                      className="text-theme_color2 font-medium hover:underline"
-                    >
-                      লগইন করুন
-                    </button>
+                  <div className="text-center text-sm text-gray-400">
+                    নিবন্ধন করে, আপনি আমাদের <a href="#" className="text-theme_color2 hover:underline">শর্তাবলী</a> এবং <a href="#" className="text-theme_color2 hover:underline">গোপনীয়তা নীতি</a> স্বীকার করেছেন
                   </div>
                 </div>
               )}
 
-              {activeTab === 'oneclick' && (
+              {activeTab === 'forgot-password' && (
                 <div className="space-y-4">
                   <div className="relative">
-                    <FaUser className="absolute left-3 top-3 text-theme_color2 text-sm md:text-base" />
+                    <MdEmail className="absolute left-3 top-3 text-theme_color2 text-sm md:text-base" />
                     <input
-                      type="text"
-                      name="username"
-                      value={formData.username}
+                      type="email"
+                      name="email"
+                      value={formData.email}
                       onChange={handleInputChange}
-                      placeholder="ব্যবহারকারীর নাম"
-                      className={`w-full bg-gray-700 text-white border ${errors.username ? 'border-red-500' : 'border-gray-600'} py-2 pl-10 pr-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base placeholder-gray-400`}
+                      placeholder="আপনার ইমেইল ঠিকানা"
+                      className={`w-full bg-gray-700 text-white border ${errors.email ? 'border-red-500' : 'border-gray-600'} py-2 pl-10 pr-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base placeholder-gray-400`}
                     />
-                    {errors.username && (
-                      <p className="text-red-400 text-xs mt-1">{errors.username}</p>
+                    {errors.email && (
+                      <p className="text-red-400 text-xs mt-1">{errors.email}</p>
                     )}
                   </div>
 
-                  <div className="flex items-start text-xs md:text-sm text-theme_color2 space-x-2">
-                    <input type="checkbox" className="mt-1 accent-theme_color2" required />
-                    <p>আমি ১৮ বছর পূর্ণ এবং গ্রহণ করতে সম্মত <a className="text-blue-300 hover:underline" href="#">ব্যবহারের শর্ত</a></p>
+                  <button 
+                    onClick={handleForgotPassword}
+                    className="w-full bg-theme_color2 hover:bg-theme_color2/90 cursor-pointer px-[20px] py-[10px] rounded-[5px] "
+                  >
+                    পাসওয়ার্ড রিসেট করুন
+                  </button>
+
+                  <button 
+                    onClick={() => setActiveTab('login')}
+                    className="flex items-center justify-center w-full text-theme_color2 hover:underline cursor-pointer text-sm"
+                  >
+                    <FaArrowLeft className="mr-1" /> লগইন পৃষ্ঠায় ফিরে যান
+                  </button>
+                </div>
+              )}
+
+              {activeTab === 'reset-password' && (
+                <div className="space-y-4">
+                  <div className="relative">
+                    <FaLock className="absolute left-3 top-3 text-theme_color2 text-sm md:text-base" />
+                    <input
+                      type={passwordVisible ? "text" : "password"}
+                      name="password"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      placeholder="নতুন পাসওয়ার্ড"
+                      className={`w-full bg-gray-700 text-white border ${errors.password ? 'border-red-500' : 'border-gray-600'} py-2 pl-10 pr-10 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base placeholder-gray-400`}
+                    />
+                    <button
+                      onClick={() => setPasswordVisible(!passwordVisible)}
+                      className="absolute right-3 top-3 text-theme_color2 cursor-pointer"
+                    >
+                      {passwordVisible ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                    {errors.password && (
+                      <p className="text-red-400 text-xs mt-1">{errors.password}</p>
+                    )}
+                  </div>
+
+                  <div className="relative">
+                    <FaLock className="absolute left-3 top-3 text-theme_color2 text-sm md:text-base" />
+                    <input
+                      type={confirmPasswordVisible ? "text" : "password"}
+                      name="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={handleInputChange}
+                      placeholder="পাসওয়ার্ড নিশ্চিত করুন"
+                      className={`w-full bg-gray-700 text-white border ${errors.confirmPassword ? 'border-red-500' : 'border-gray-600'} py-2 pl-10 pr-10 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base placeholder-gray-400`}
+                    />
+                    <button
+                      onClick={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
+                      className="absolute right-3 top-3 text-theme_color2 cursor-pointer"
+                    >
+                      {confirmPasswordVisible ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                    {errors.confirmPassword && (
+                      <p className="text-red-400 text-xs mt-1">{errors.confirmPassword}</p>
+                    )}
                   </div>
 
                   <button 
-                    onClick={handleOneClickRegister}
-                    className="w-full bg-theme_color2 hover:bg-theme_color2/90 px-[20px] py-[10px] rounded-[5px] "
+                    onClick={handleResetPassword}
+                    className="w-full bg-theme_color2 hover:bg-theme_color2/90 cursor-pointer px-[20px] py-[10px] rounded-[5px] "
                   >
-                    এক ক্লিকে নিবন্ধন
+                    পাসওয়ার্ড পরিবর্তন করুন
                   </button>
-
-                  <div className="text-center text-xs md:text-sm text-theme_color2">
-                    বিস্তারিত নিবন্ধন চান?{' '}
-                    <button 
-                      onClick={() => setActiveTab('register')} 
-                      className="text-blue-300 font-medium hover:underline"
-                    >
-                      নিবন্ধন ফর্মে যান
-                    </button>
-                  </div>
                 </div>
               )}
+            </div>
+
+            <div className="px-6 py-4 border-t border-gray-700">
+              <div className="text-center text-sm text-gray-400">
+                {activeTab === 'login' ? (
+                  <>
+                    অ্যাকাউন্ট নেই?{' '}
+                    <button 
+                      onClick={() => setActiveTab('register')}
+                      className="text-theme_color2 hover:underline cursor-pointer"
+                    >
+                      নিবন্ধন করুন
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    ইতিমধ্যে অ্যাকাউন্ট আছে?{' '}
+                    <button 
+                      onClick={() => setActiveTab('login')}
+                      className="text-theme_color2 hover:underline cursor-pointer"
+                    >
+                      লগইন করুন
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showOtpModal && (
+        <div className="fixed inset-0 z-[10002] flex items-center justify-center bg-[rgba(0,0,0,0.6)] p-4 backdrop-blur-lg">
+          <div className="bg-gray-800 w-full max-w-lg rounded-[5px] shadow-2xl overflow-hidden border border-gray-700">
+            <div className="px-6 py-4 flex justify-between items-center">
+              <h2 className="text-white text-xl font-bold">OTP যাচাই করুন</h2>
+              <button 
+                onClick={() => {
+                  setShowOtpModal(false);
+                  setOtp(['', '', '', '', '', '']);
+                }}
+                className="text-white hover:text-gray-300 transition-colors"
+              >
+                <FaTimesCircle className="text-xl" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <p className="text-gray-300 mb-6 text-center">
+                ৬-অংকের OTP কোডটি ইমেইলে পাঠানো হয়েছে: {otpEmail}
+              </p>
+
+              <div className="flex justify-center space-x-3 mb-6">
+                {otp.map((digit, index) => (
+                  <input
+                    key={index}
+                    ref={(el) => (otpInputRefs.current[index] = el)}
+                    type="text"
+                    maxLength="1"
+                    value={digit}
+                    onChange={(e) => handleOtpChange(index, e.target.value)}
+                    onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                    className="w-12 h-12 bg-gray-700 border border-gray-600 rounded-md text-white text-center text-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                ))}
+              </div>
+
+              <button 
+                onClick={handleVerifyOtp}
+                className="w-full bg-theme_color2 hover:bg-theme_color2/90 cursor-pointer px-[20px] py-[10px] rounded-[5px] mb-4"
+              >
+                যাচাই করুন
+              </button>
+
+              <div className="text-center">
+                {countdown > 0 ? (
+                  <p className="text-gray-400 text-sm">
+                    {countdown} সেকেন্ড পর নতুন OTP পাঠানো যাবে
+                  </p>
+                ) : (
+                  <button 
+                    onClick={resendOtp}
+                    className="text-theme_color2 hover:underline cursor-pointer text-sm"
+                  >
+                    OTP পুনরায় পাঠান
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>

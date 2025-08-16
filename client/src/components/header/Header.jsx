@@ -47,6 +47,18 @@ import man3 from "../../assets/profileimages/man3.png"
 import man4 from "../../assets/profileimages/man4.png"
 import man5 from "../../assets/profileimages/man5.png"
 import man6 from "../../assets/profileimages/man6.png"
+// Import sidebar images
+import popular_img from "../../assets/popular.png"
+import dice_img from "../../assets/dice.png"
+import user_img from "../../assets/user.png"
+import bonus_img from "../../assets/bonus.png"
+import affiliate_img from "../../assets/affiliate.png"
+import question_img from "../../assets/question.png"
+import teamwork_img from "../../assets/teamwork.png"
+import party_img from "../../assets/party.png"
+import link_img from "../../assets/link.png"
+import support_img from "../../assets/support.png"
+
 import { 
   FiHome, 
   FiSearch, 
@@ -533,16 +545,58 @@ const handleLogout = () => {
         setShowPopup(true);
     };
 
-    const menuItems = [
-        { icon: <FaFire className="text-yellow-400" />, label: 'গরম খেলা', link: '/hot-games' },
-        { icon: <FaUserFriends className="text-blue-400" />, label: 'বন্ধুর আমন্ত্রণ', link: '/invite-friends' },
-        { icon: <FaMedal className="text-yellow-500" />, label: 'পুরস্কার কেন্দ্র', link: '/rewards-center' },
-        { icon: <FaFutbol className="text-red-400" />, label: 'লাইভ', link: '/live' },
-        { icon: <FaBullseye className="text-red-500" />, label: 'মিশন', link: '/missions' },
-        { icon: <FaHandsHelping className="text-blue-300" />, label: 'স্পোর্টস', link: '/sports' },
-        { icon: <FaGamepad className="text-purple-500" />, label: 'ই-স্পোর্টস', link: '/esports' },
-        { icon: <FaHeadset2 className="text-teal-400" />, label: 'গ্রাহক সেবা', link: '/customer-support' },
-    ];
+const menuItems = [
+  { 
+    icon: popular_img, 
+    label: 'ক্যাসিনো',
+    path: '/hot-games' 
+  },
+  { 
+    icon: dice_img, 
+    label: 'জনপ্রিয়',
+    path: '/hot-games' 
+  },
+  { 
+    icon: user_img, 
+    label: 'আমার একাউন্ট',
+    leftTab: 'আমার অ্যাকাউন্ট'
+  },
+  { 
+    icon: bonus_img, 
+    label: 'বোনাস',
+    leftTab: 'পুরস্কার কেন্দ্র'
+  },
+  { 
+    icon: teamwork_img, 
+    label: 'প্রভাইডার',
+    path: '/provider' 
+  },
+  { 
+    icon: affiliate_img, 
+    label: 'এফিলিয়েট',
+    path: '/affiliate-programme' 
+  },
+  { 
+    icon: party_img, 
+    label: 'ভিআইপি ক্লাব',
+    path: '/vip-club' 
+  },
+  { 
+    icon: link_img, 
+    label: 'রেফারেল প্রোগ্রাম',
+   path: '/vip-club' 
+  },
+     { 
+    icon: support_img,
+    label: 'যোগাযোগ',
+    path: '/contact' 
+  },
+  { 
+    icon: question_img,
+    label: 'FAQ/নীতি',
+    path: '/faq-policy' 
+  },
+];
 
     const profileMenuItems = [
         { 
@@ -555,16 +609,16 @@ const handleLogout = () => {
                 setProfileDropdownOpen(false);
             }
         },
-        { 
-            icon: <FaWallet className="text-blue-400" />, 
-            label: 'ওয়ালেট', 
-            path: '/wallet', 
-            onClick: () => {
-                setActiveLeftTab('আমার অ্যাকাউন্ট');
-                setShowPopup(true);
-                setProfileDropdownOpen(false);
-            }
-        },
+        // { 
+        //     icon: <FaWallet className="text-blue-400" />, 
+        //     label: 'ওয়ালেট', 
+        //     path: '/wallet', 
+        //     onClick: () => {
+        //         setActiveLeftTab('আমার অ্যাকাউন্ট');
+        //         setShowPopup(true);
+        //         setProfileDropdownOpen(false);
+        //     }
+        // },
         { 
             icon: <FaHistory className="text-blue-400" />, 
             label: 'লেনদেনের ইতিহাস', 
@@ -744,21 +798,14 @@ const getProfileImage = (username) => {
                         </button>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-3 p-4">
+                    <div className="grid grid-cols-1 gap-3 p-4">
                         {menuItems.map((item, index) => (
-                            <a
-                                key={index}
-                                href={item.link}
-                                className="bg-gray-800 hover:bg-gray-700 transition-all duration-300 border-[1px] border-gray-700 text-white rounded-lg py-4 flex flex-col items-center justify-center cursor-pointer"
-                                onClick={closeSidebar}
-                            >
-                                <div className="text-xl mb-1">
-                                    {item.icon}
-                                </div>
-                                <div className="text-xs text-center leading-tight font-medium text-gray-300">
-                                    {item.label}
-                                </div>
-                            </a>
+                          <div 
+      className="flex items-center gap-4 p-3 bg-gray-800 hover:bg-gray-700 rounded-lg cursor-pointer transition-colors"
+    >
+      <img src={item.icon} alt={item.label} className="w-6 h-6" />
+      <span className="text-white font-[500] ">{item.label}</span>
+    </div>
                         ))}
                     </div>
                 </div>

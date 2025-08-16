@@ -67,7 +67,7 @@ import man3 from "../../assets/profileimages/man3.png"
 import man4 from "../../assets/profileimages/man4.png"
 import man5 from "../../assets/profileimages/man5.png"
 import man6 from "../../assets/profileimages/man6.png"
-
+import support_img from "../../assets/support.png"
 const menuItems = [
   { 
     icon: popular_img, 
@@ -109,11 +109,17 @@ const menuItems = [
     label: 'রেফারেল প্রোগ্রাম'
     // This will open the InvitePopup if logged in, or login popup if not
   },
+     { 
+    icon: support_img,
+    label: 'যোগাযোগ',
+    path: '/contact' 
+  },
   { 
     icon: question_img,
     label: 'FAQ/নীতি',
     path: '/faq-policy' 
   },
+ 
 ];
 
 const leftMenuItems = [
@@ -920,8 +926,8 @@ const Popup = ({ onClose, selectedMenu, activeLeftTab, setActiveLeftTab }) => {
   const [selectedTab, setSelectedTab] = useState(tabs[0]);
 
   return (
-    <div className="fixed top-0 left-0 inset-0 z-[100000000] w-full h-screen backdrop-blur-sm bg-black/50 flex items-center justify-center p-4">
-      <div className="bg-gray-900 text-white w-full max-w-6xl h-[90vh] rounded-xl shadow-2xl overflow-hidden relative transition-all duration-300 transform border border-gray-700">
+    <div className="fixed top-0 left-0 inset-0 z-[100000000] w-full h-screen backdrop-blur-sm bg-[rgba(0,0,0,0.4)] flex items-center justify-center p-4">
+      <div className="bg-[rgba(0,0,0,0.4)] text-white w-full max-w-6xl h-[90vh] rounded-xl shadow-2xl overflow-hidden relative transition-all duration-300 transform border border-gray-700">
         <button 
           className="absolute top-4 right-4 cursor-pointer text-gray-400 hover:text-white text-[25px] z-10" 
           onClick={onClose}
@@ -1581,7 +1587,7 @@ const handleUsernameUpdate = async () => {
     <div className="flex items-center justify-between">
       <div>
         <p className="text-sm text-purple-200">বোনাস ব্যালেন্স</p>
-        <p className="text-2xl font-bold">{formatBalance(userData?.bonus_balance)} ৳</p>
+        <p className="text-2xl font-bold">{formatBalance(userData?.bonusBalance)} ৳</p>
       </div>
       <div className="bg-purple-700 bg-opacity-30 p-2 rounded-full">
         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-purple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1596,7 +1602,7 @@ const handleUsernameUpdate = async () => {
     <div className="flex items-center justify-between">
       <div>
         <p className="text-sm text-green-200">রেফারেল ব্যালেন্স</p>
-        <p className="text-2xl font-bold">{formatBalance(userData?.refer_balance)} ৳</p>
+        <p className="text-2xl font-bold">{formatBalance(userData?.referralEarnings)} ৳</p>
       </div>
       <div className="bg-green-700 bg-opacity-30 p-2 rounded-full">
         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -2064,7 +2070,6 @@ const handleUsernameUpdate = async () => {
   );
 };
 
-
 const DepositTabContent = () => {
   const [amount, setAmount] = useState('');
   const [selectedMethod, setSelectedMethod] = useState('bkash');
@@ -2477,9 +2482,8 @@ const DepositTabContent = () => {
   );
 };
 
-
-
 const WithdrawalTabContent = () => {
+  // State variables
   const [amount, setAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('bkash');
   const [accountNumber, setAccountNumber] = useState('');
@@ -2487,52 +2491,168 @@ const WithdrawalTabContent = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [cancelBonus, setCancelBonus] = useState(false);
+  const [showBonusCancelConfirm, setShowBonusCancelConfirm] = useState(false);
+  const [cancelBonusLoading, setCancelBonusLoading] = useState(false);
+  const [withdrawalHistory, setWithdrawalHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  
+  // User context
   const { userData, loading: userLoading, error: userError, fetchUserData } = useUser();
   const base_url = import.meta.env.VITE_API_KEY_Base_URL;
 
-  // Check if user has mobile number
+  // তারিখ ফরম্যাট করার ফাংশন
+  const formatDate = (dateString) => {
+    const options = { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    };
+    return new Date(dateString).toLocaleDateString('bn-BD', options);
+  };
+
+  // উত্তোলন ইতিহাস লোড করার ইফেক্ট
+  useEffect(() => {
+    const fetchWithdrawalHistory = async () => {
+      try {
+        setHistoryLoading(true);
+        const response = await axios.get(`${base_url}/user/withdrawal/${userData._id}`, {
+          headers: {
+            'x-api-key': import.meta.env.VITE_API_KEY
+          }
+        });
+        console.log(response)
+        setWithdrawalHistory(response.data.data || []);
+      } catch (err) {
+        console.error('উত্তোলন ইতিহাস লোড করতে ব্যর্থ:', err);
+        setError('উত্তোলন ইতিহাস লোড করতে সমস্যা হয়েছে');
+      } finally {
+        setHistoryLoading(false);
+      }
+    };
+
+    if (userData?._id) {
+      fetchWithdrawalHistory();
+    }
+  }, [userData?._id, base_url]);
+
+  // ব্যবহারকারীর মোবাইল নম্বর আছে কিনা চেক করুন
   const hasMobileNumber = userData?.phone;
   
-  // Calculate available balance after considering wagering requirements
-  const calculateAvailableBalance = () => {
-    let available = userData?.balance || 0;
+  // উপলব্ধ ব্যালেন্স এবং কমিশন গণনা করার ফাংশন
+  const calculateWithdrawalInfo = () => {
+    if (!userData) return { availableBalance: 0, commissionRate: 0, needsWagering: false };
     
-    // If user has bonus and hasn't canceled it
-    if (userData?.bonusBalance > 0 && !cancelBonus) {
-      return 0; // Can't withdraw from main balance until bonus is cleared
+    let available = userData.balance || 0;
+    let commissionRate = 0;
+    let needsWagering = false;
+    let wageringStatus = '';
+    let remainingWagering = 0;
+    
+    // Case 1: Active bonus exists - cannot withdraw unless cancelled
+    if (userData.bonusBalance > 0 && !cancelBonus) {
+      return {
+        availableBalance: 0,
+        commissionRate: 0,
+        needsWagering: false,
+        hasActiveBonus: true
+      };
     }
     
-    // Check wagering requirements
-    if (userData?.totalDeposits > 0) {
-      const wageringRequirement = userData.totalDeposits * 3;
-      const wageringCompleted = userData.totalWagered || 0;
-      
-      if (wageringCompleted < wageringRequirement) {
-        // If they want to withdraw without completing, apply 20% commission
-        return available * 0.8; // 20% commission
-      }
-    }
+    // Case 2: No active bonus, check wagering requirements
+// Case 2: No active bonus, check wagering requirements
+if (userData.total_deposit > 0) {
+  const wageringRequirement1x = userData.total_deposit * 1;
+  const wageringRequirement3x = userData.total_deposit * 3;
+  const wageringCompleted = userData.total_bet || 0; // Changed from totalWagered to total_bet
+  
+  // Subcase 2a: Completed less than 1x wagering - cannot withdraw
+  if (wageringCompleted < wageringRequirement1x) {
+    wageringStatus = 'less-than-1x';
+    needsWagering = true;
+    remainingWagering = wageringRequirement1x - wageringCompleted;
+    return {
+      availableBalance: 0,
+      commissionRate: 0,
+      needsWagering: true,
+      wageringStatus,
+      remainingWagering
+    };
+  }
+  // Subcase 2b: Completed between 1x and 3x wagering - 20% commission
+  else if (wageringCompleted < wageringRequirement3x) {
+    commissionRate = 0.2;
+    needsWagering = true;
+    remainingWagering = wageringRequirement3x - wageringCompleted;
+    wageringStatus = 'less-than-3x';
+  }
+  // Subcase 2c: Completed 3x wagering - no commission
+}
     
-    return available;
+    return {
+      availableBalance:userData.balance,
+      commissionRate,
+      needsWagering,
+      remainingWagering,
+      wageringStatus
+    };
   };
   
-  const availableBalance = calculateAvailableBalance();
-  const hasActiveBonus = userData?.bonusBalance > 0 && !cancelBonus;
-  const needsWagering = userData?.totalDeposits > 0 && 
-                       (userData.totalWagered || 0) < (userData.totalDeposits * 3);
+  // Calculate withdrawal info
+  const {
+    availableBalance,
+    commissionRate,
+    needsWagering,
+    hasActiveBonus,
+    remainingWagering,
+    wageringStatus
+  } = calculateWithdrawalInfo();
 
+  // বোনাস বাতিল করার ফাংশন
+  const handleCancelBonus = async () => {
+    setCancelBonusLoading(true);
+    setError('');
+    
+    try {
+      const response = await axios.post(`${base_url}/user/cancel-bonus`, {
+        userid: userData._id
+      }, {
+        headers: {
+          'x-api-key': import.meta.env.VITE_API_KEY,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.data.success) {
+        setSuccess(response.data.message);
+        setCancelBonus(false);
+        setShowBonusCancelConfirm(false);
+        await fetchUserData();
+      } else {
+        setError(response.data.message || 'বোনাস বাতিল করতে ব্যর্থ হয়েছে');
+      }
+    } catch (err) {
+      console.error('বোনাস বাতিল করার ত্রুটি:', err);
+      setError(err.response?.data?.message || 'বোনাস বাতিল করতে ব্যর্থ হয়েছে');
+    } finally {
+      setCancelBonusLoading(false);
+    }
+  };
+
+  // উত্তোলন হ্যান্ডলার
   const handleWithdrawal = async () => {
     setError('');
     setSuccess('');
     
-    // Validation
+    // ভ্যালিডেশন
     if (!amount || amount < 300) {
-      setError('ন্যূনতম উত্তোলন পরিমাণ ৳ ৩০০');
+      setError('ন্যূনতম উত্তোলনের পরিমাণ ৩০০ টাকা');
       return;
     }
     
-    if (parseFloat(amount) > availableBalance) {
-      setError(`আপনার পর্যাপ্ত ব্যালেন্স নেই। উত্তোলনযোগ্য ব্যালেন্স: ৳${availableBalance.toFixed(2)}`);
+    if (parseFloat(amount) > userData.balance) {
+      setError(`পর্যাপ্ত ব্যালেন্স নেই। উপলব্ধ: ৳${userData.balance.toFixed(2)}`);
       return;
     }
     
@@ -2541,277 +2661,476 @@ const WithdrawalTabContent = () => {
       return;
     }
     
-    if (paymentMethod === 'bkash' && !/^01\d{9}$/.test(accountNumber)) {
-      setError('অবৈধ bKash নম্বর ফরম্যাট (01XXXXXXXXX)');
+    // পেমেন্ট মেথড ভ্যালিডেশন
+    const phoneRegex = /^01\d{9}$/;
+    if (['bkash', 'nagad', 'rocket'].includes(paymentMethod) && !phoneRegex.test(accountNumber)) {
+      setError(`অবৈধ ${paymentMethod === 'bkash' ? 'বিকাশ' : paymentMethod === 'nagad' ? 'নগদ' : 'রকেট'} নম্বর ফরম্যাট (01XXXXXXXXX)`);
       return;
     }
-    
-    if (paymentMethod === 'nagad' && !/^01\d{9}$/.test(accountNumber)) {
-      setError('অবৈধ Nagad নম্বর ফরম্যাট (01XXXXXXXXX)');
-      return;
-    }
-    
-    if (paymentMethod === 'rocket' && !/^01\d{9}$/.test(accountNumber)) {
-      setError('অবৈধ Rocket নম্বর ফরম্যাট (01XXXXXXXXX)');
+
+    // Special validation for wagering status
+    if (wageringStatus === 'less-than-1x') {
+      setError(`উত্তোলনের জন্য আপনাকে কমপক্ষে ১x ওয়েজারিং সম্পূর্ণ করতে হবে (বাকি: ${remainingWagering.toFixed(2)} টাকা)`);
       return;
     }
 
     try {
       setLoading(true);
       
+      // অর্ডার আইডি জেনারেট করুন
       const orderId = `WD${Date.now()}${Math.floor(Math.random() * 1000)}`;
       
-      const payload = {
+      // নিট পরিমাণ এবং কমিশন গণনা করুন
+      const netAmount = amount * (1 - commissionRate);
+      const commissionAmount = amount * commissionRate;
+      
+      // পে-আউট ডেটা প্রস্তুত করুন
+      const payoutData = {
+        userId: userData._id,
+        username: userData.username,
+        email: userData.email,
+        playerId: userData.player_id,
         provider: paymentMethod,
+        amount: parseFloat(amount),
         orderId: orderId,
-        payeeId: userData.id,
         payeeAccount: accountNumber,
-        callbackUrl: `${window.location.origin}/withdrawal-callback`,
-        amount: parseFloat(amount).toFixed(2),
-        currency: "BDT",
+        post_balance: userData.balance - parseFloat(amount),
+        recieved_amount: netAmount,
+        tax_amount: commissionAmount,
         cancelBonus: cancelBonus,
-        commissionApplied: needsWagering && (userData.totalWagered || 0) < (userData.totalDeposits * 3)
+        wageringStatus: wageringStatus || 'completed'
       };
 
-      const response = await axios.post(`${base_url}/api/payment/payout`, payload, {
+      // API কল করুন
+      const payoutResponse = await axios.post(`${base_url}/user/payout`, payoutData, {
         headers: {
           'x-api-key': import.meta.env.VITE_API_KEY,
           'Content-Type': 'application/json'
         }
       });
 
-      if (response.data.success) {
-        setSuccess('উত্তোলন অনুরোধ সফলভাবে জমা হয়েছে। এটি প্রসেস হতে কিছু সময় লাগতে পারে।');
-        // Reset form
+      if (payoutResponse.data.success) {
+        setSuccess('উত্তোলনের অনুরোধ সফলভাবে জমা হয়েছে। প্রক্রিয়াকরণে কিছু সময় লাগতে পারে।');
+        // ফর্ম রিসেট করুন
         setAmount('');
         setAccountNumber('');
         setCancelBonus(false);
-        // Refresh user data
-        fetchUserData();
+        // ডেটা রিফ্রেশ করুন
+        await fetchUserData();
+        const historyResponse = await axios.get(`${base_url}/user/withdrawals/${userData._id}`, {
+          headers: {
+            'x-api-key': import.meta.env.VITE_API_KEY
+          }
+        });
+        setWithdrawalHistory(historyResponse.data.data || []);
       } else {
-        setError('উত্তোলন অনুরোধ ব্যর্থ হয়েছে। দয়া করে আবার চেষ্টা করুন।');
+        setError(payoutResponse.data.message || 'উত্তোলনের অনুরোধ ব্যর্থ হয়েছে। আবার চেষ্টা করুন।');
       }
     } catch (err) {
-      console.error('Withdrawal error:', err);
+      console.error('উত্তোলন ত্রুটি:', err);
       if (err.response) {
-        if (err.response.data.message) {
-          setError(err.response.data.message);
-        } else {
-          setError('সার্ভার থেকে একটি ত্রুটি ঘটেছে। দয়া করে পরে আবার চেষ্টা করুন।');
-        }
+        setError(err.response.data.message || 'সার্ভার ত্রুটি হয়েছে। পরে আবার চেষ্টা করুন।');
       } else {
-        setError('নেটওয়ার্ক ত্রুটি ঘটেছে। আপনার ইন্টারনেট সংযোগ পরীক্ষা করুন।');
+        setError('নেটওয়ার্ক ত্রুটি হয়েছে। আপনার ইন্টারনেট সংযোগ পরীক্ষা করুন।');
       }
     } finally {
       setLoading(false);
     }
   };
 
+  // লোডিং স্টেট
   if (userLoading) {
-    return <div className="text-center py-4">লোড হচ্ছে...</div>;
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500"></div>
+      </div>
+    );
   }
 
+  // এরর স্টেট
   if (userError) {
-    return <div className="text-center py-4 text-red-500">ব্যবহারকারী ডেটা লোড করতে সমস্যা হয়েছে</div>;
+    return (
+      <div className="bg-red-500/10 border border-red-500 text-red-400 p-4 rounded text-center">
+        ব্যবহারকারী ডেটা লোড করতে ত্রুটি: {userError}
+      </div>
+    );
   }
 
+  // মোবাইল নম্বর না থাকলে
   if (!hasMobileNumber) {
     return (
-      <div className="p-6 rounded-lg max-w-2xl mx-auto text-center">
-        <div className="p-4 rounded mb-4">
-          <h3 className="font-bold text-lg">দয়া করে মোবাইল নাম্বার যোগ করুন</h3>
-          <p className="mt-2">উত্তোলন করার জন্য আপনাকে প্রথমে অ্যাকাউন্ট একটি মোবাইল নাম্বার যোগ করতে হবে</p>
+      <div className="max-w-md mx-auto p-6 bg-gray-800 rounded-lg border border-gray-700 text-center">
+        <div className="mb-6">
+          <h3 className="text-xl font-bold text-gray-200 mb-2">মোবাইল নম্বর যোগ করুন</h3>
+          <p className="text-gray-400">উত্তোলন করার জন্য আপনার প্রোফাইলে একটি বৈধ মোবাইল নম্বর যোগ করতে হবে</p>
         </div>
         <button 
-          className="bg-cyan-500 hover:bg-cyan-600 text-gray-900 py-2 px-6 rounded text-lg"
-          onClick={() => {
-            // Redirect to profile page
-            window.location.href = '/profile';
-          }}
+          className="bg-cyan-500 hover:bg-cyan-600 text-gray-900 font-medium py-2 px-6 rounded-lg transition-colors"
+          onClick={() => window.location.href = '/profile'}
         >
-          অ্যাকাউন্ট এডিট করুন
+          প্রোফাইল এডিট করুন
         </button>
       </div>
     );
   }
 
+  // মেইন কম্পোনেন্ট রিটার্ন
   return (
-    <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-      <h3 className="text-lg font-semibold mb-4">উত্তোলন</h3>
-      
-      {/* Warning Message */}
-      <div className="bg-yellow-500/10 border border-yellow-500 text-yellow-400 p-3 rounded mb-4 text-sm">
-        ⚠️ উত্তোলনের ন্যূনতম পরিমাণ: ৳ 300 | উত্তোলনের সময়: সকাল ১০টা থেকে রাত ১০টা পর্যন্ত
-      </div>
-
-      {/* Balance Information */}
-      <div className="bg-gray-700 p-3 rounded mb-4 border border-gray-600">
-        <div className="flex justify-between mb-2">
-          <span className="text-gray-400">মোট ব্যালেন্স:</span>
-          <span className="font-medium">৳{(userData?.balance || 0).toFixed(2)}</span>
+    <div className="space-y-4">
+      {/* উত্তোলন ফর্ম */}
+      <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+        <h3 className="text-lg font-semibold mb-4 text-gray-200">টাকা উত্তোলন</h3>
+        
+        {/* নোটিফিকেশন */}
+        <div className="bg-yellow-500/10 border border-yellow-500 text-yellow-400 p-3 rounded mb-4 text-sm">
+          ⚠️ ন্যূনতম উত্তোলন: ৳৩০০ | উত্তোলনের সময়: সকাল ১০টা থেকে রাত ১০টা
         </div>
-        {userData?.bonusBalance > 0 && (
-          <div className="flex justify-between mb-2">
-            <span className="text-gray-400">বোনাস ব্যালেন্স:</span>
-            <span className="font-medium text-cyan-400">৳{userData.bonusBalance.toFixed(2)}</span>
+
+        {/* ব্যালেন্স কার্ড */}
+        <div className="bg-gray-700 p-4 rounded-lg mb-4 border border-gray-600">
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <p className="text-gray-400 text-sm">মোট ব্যালেন্স</p>
+              <p className="font-medium text-lg">৳{(userData?.balance || 0).toFixed(2)}</p>
+            </div>
+            {userData?.bonusBalance > 0 && (
+              <div>
+                <p className="text-gray-400 text-sm">বোনাস ব্যালেন্স</p>
+                <p className="font-medium text-lg text-cyan-400">৳{userData.bonusBalance.toFixed(2)}</p>
+              </div>
+            )}
+            <div className="col-span-2">
+              <p className="text-gray-400 text-sm">উপলব্ধ উত্তোলনযোগ্য ব্যালেন্স</p>
+              <p className={`font-medium text-xl ${availableBalance > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                ৳{availableBalance.toFixed(2)}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* বোনাস এলার্ট */}
+        {hasActiveBonus && (
+          <div className="bg-red-500/10 border border-red-500 text-red-400 p-3 rounded mb-4">
+            <div className="flex items-start">
+              <span className="mr-2">⚠️</span>
+              <div>
+                <p className="font-medium">সক্রিয় বোনাস</p>
+                <p className="text-sm">
+                  আপনার একটি সক্রিয় বোনাস আছে (৳{userData.bonusBalance.toFixed(2)}). 
+                  উত্তোলন করতে চাইলে প্রথমে বোনাস বাতিল করতে হবে।
+                </p>
+                <div className="mt-2 flex items-center">
+                  <input
+                    type="checkbox"
+                    id="cancelBonus"
+                    checked={cancelBonus}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setShowBonusCancelConfirm(true);
+                      } else {
+                        setCancelBonus(false);
+                      }
+                    }}
+                    className="mr-2 h-4 w-4"
+                  />
+                  <label htmlFor="cancelBonus" className="text-sm">বোনাস বাতিল করতে চাই</label>
+                </div>
+              </div>
+            </div>
           </div>
         )}
-        <div className="flex justify-between">
-          <span className="text-gray-400">উত্তোলনযোগ্য ব্যালেন্স:</span>
-          <span className={`font-medium ${availableBalance > 0 ? 'text-green-400' : 'text-red-400'}`}>
-            ৳{availableBalance.toFixed(2)}
-          </span>
-        </div>
-      </div>
 
-      {/* Bonus Warning */}
-      {hasActiveBonus && (
-        <div className="bg-red-500/10 border border-red-500 text-red-400 p-3 rounded mb-4 text-sm">
-          ⚠️ আপনার অ্যাকাউন্টে সক্রিয় বোনাস রয়েছে (৳{userData.bonusBalance.toFixed(2)}). 
-          বোনাস থাকা অবস্থায় উত্তোলন করা যাবে না। আপনি চাইলে বোনাস বাতিল করতে পারেন (১৫০% জরিমানা সহ)।
-          <div className="mt-2 flex items-center">
-            <input
-              type="checkbox"
-              id="cancelBonus"
-              checked={cancelBonus}
-              onChange={(e) => setCancelBonus(e.target.checked)}
-              className="mr-2"
-            />
-            <label htmlFor="cancelBonus">বোনাস বাতিল করুন (১৫০% জরিমানা)</label>
-          </div>
-          {cancelBonus && (
-            <div className="mt-2 text-yellow-400">
-              বোনাস বাতিল করলে আপনার ব্যালেন্স থেকে ৳{(userData.bonusBalance * 1.5).toFixed(2)} কেটে নেওয়া হবে।
+        {/* বোনাস বাতিল কনফার্মেশন মোডাল */}
+        {showBonusCancelConfirm && (
+          <div className="fixed inset-0 bg-[rgba(0,0,0,0.4)] bg-opacity-50 flex items-center justify-center z-[10000000] backdrop-blur-lg p-4">
+            <div className="bg-gray-800 p-6 rounded-lg max-w-md w-full border border-gray-700">
+              <h3 className="text-xl font-bold mb-4">বোনাস বাতিল নিশ্চিত করুন</h3>
+              <div className="mb-6">
+                <p className="text-gray-300 mb-2">
+                  আপনি নিচের বোনাস বাতিল করতে চলেছেন:
+                </p>
+                <div className="bg-gray-700 p-3 rounded border border-gray-600">
+                  <p className="font-medium text-cyan-400">৳{userData.bonusBalance.toFixed(2)} বোনাস</p>
+                </div>
+                <p className="text-red-400 text-sm mt-2">
+                  বোনাস বাতিল করলে এটি আর ফেরত পাওয়া যাবে না
+                </p>
+              </div>
+              <div className="flex justify-end space-x-3">
+                <button
+                  className="px-4 py-2 bg-gray-600 rounded hover:bg-gray-700 transition-colors"
+                  onClick={() => {
+                    setShowBonusCancelConfirm(false);
+                    setCancelBonus(false);
+                  }}
+                  disabled={cancelBonusLoading}
+                >
+                  বাতিল
+                </button>
+                <button
+                  className="px-4 py-2 bg-red-500 rounded hover:bg-red-600 transition-colors"
+                  onClick={handleCancelBonus}
+                  disabled={cancelBonusLoading}
+                >
+                  {cancelBonusLoading ? (
+                    <span className="flex items-center">
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      প্রসেসিং...
+                    </span>
+                  ) : 'বাতিল করুন'}
+                </button>
+              </div>
             </div>
-          )}
-        </div>
-      )}
-
-      {/* Wagering Warning */}
-      {needsWagering && (
-        <div className="bg-purple-500/10 border border-purple-500 text-purple-400 p-3 rounded mb-4 text-sm">
-          ⚠️ আপনার ডিপোজিটের ৩ গুণ ওয়েজার পূরণ হয়নি ({userData.totalWagered || 0}/{(userData.totalDeposits * 3).toFixed(2)}).
-          ওয়েজার পূরণ না করেই উত্তোলন করলে ২০% কমিশন কাটা হবে।
-          <div className="mt-2">
-            বর্তমান উত্তোলনে প্রযোজ্য কমিশন: ৳{(parseFloat(amount || 0) * 0.2).toFixed(2)} 
-            (নিট প্রাপ্তি: ৳{(parseFloat(amount || 0) * 0.8).toFixed(2)})
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Error/Success Messages */}
-      {error && (
-        <div className="bg-red-500/10 border border-red-500 text-red-400 p-3 rounded mb-4 text-sm">
-          ❌ {error}
-        </div>
-      )}
-      
-      {success && (
-        <div className="bg-green-500/10 border border-green-500 text-green-400 p-3 rounded mb-4 text-sm">
-          ✅ {success}
-        </div>
-      )}
+        {/* ওয়েজারিং এলার্ট */}
+        {needsWagering && (
+          <div className="bg-purple-500/10 border border-purple-500 text-purple-400 p-3 rounded mb-4">
+            <div className="flex items-start">
+              <span className="mr-2">ℹ️</span>
+              <div>
+                <p className="font-medium">ওয়েজারিং প্রয়োজনীয়তা</p>
+                {wageringStatus === 'less-than-1x' ? (
+                  <>
+                    <p className="text-sm text-red-400">
+                      আপনি এখনো ১x ওয়েজারিং সম্পূর্ণ করেননি ({userData.totalWagered || 0}/{userData.total_deposit * 1})
+                    </p>
+                    <p className="text-sm mt-1">
+                      উত্তোলন করতে কমপক্ষে {remainingWagering.toFixed(2)} টাকা আরো বাজি ধরুন
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm">
+                      আপনার বাকি ওয়েজারিং: {remainingWagering.toFixed(2)} টাকা (৩x এর মধ্যে)
+                    </p>
+                    <p className="text-sm mt-1">
+                      সম্পূর্ণ না করলে উত্তোলনে <span className="font-bold">২০% কমিশন</span> প্রযোজ্য হবে
+                    </p>
+                    {amount && (
+                      <div className="mt-2 text-xs bg-purple-500/20 p-2 rounded">
+                        <p>উত্তোলন পরিমাণ: ৳{parseFloat(amount).toFixed(2)}</p>
+                        <p>কমিশন: ৳{(parseFloat(amount) * commissionRate).toFixed(2)}</p>
+                        <p>প্রাপ্তব্য: ৳{(parseFloat(amount) * (1 - commissionRate)).toFixed(2)}</p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
-      <div className="bg-gray-700 p-4 rounded shadow mb-4 border border-gray-600">
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-400 mb-1">পেমেন্ট মেথড</label>
-          <select
-            className="w-full p-2 border border-gray-600 rounded bg-gray-800 text-white"
-            value={paymentMethod}
-            onChange={(e) => setPaymentMethod(e.target.value)}
+        {/* এরর/সাকসেস মেসেজ */}
+        {error && (
+          <div className="bg-red-500/10 border border-red-500 text-red-400 p-3 rounded mb-4">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>{error}</span>
+            </div>
+          </div>
+        )}
+        
+        {success && (
+          <div className="bg-green-500/10 border border-green-500 text-green-400 p-3 rounded mb-4">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span>{success}</span>
+            </div>
+          </div>
+        )}
+
+        {/* উত্তোলন ফর্ম */}
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-400 mb-1">পেমেন্ট পদ্ধতি</label>
+            <select
+              className="w-full p-3 border border-gray-600 rounded-lg bg-gray-700 text-white focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value)}
+            >
+              <option value="bkash">বিকাশ</option>
+              <option value="nagad">নগদ</option>
+              <option value="rocket">রকেট</option>
+              <option value="bank">ব্যাংক ট্রান্সফার</option>
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-400 mb-1">
+              {paymentMethod === 'bkash' ? 'বিকাশ নম্বর' : 
+               paymentMethod === 'nagad' ? 'নগদ নম্বর' : 
+               paymentMethod === 'rocket' ? 'রকেট নম্বর' : 'ব্যাংক অ্যাকাউন্ট নম্বর'}
+            </label>
+            <input
+              type="text"
+              className="w-full p-3 border border-gray-600 rounded-lg bg-gray-700 text-white focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+              placeholder={
+                paymentMethod === 'bkash' ? 'আপনার বিকাশ নম্বর' : 
+                paymentMethod === 'nagad' ? 'আপনার নগদ নম্বর' : 
+                paymentMethod === 'rocket' ? 'আপনার রকেট নম্বর' : 'আপনার ব্যাংক অ্যাকাউন্ট নম্বর'
+              }
+              value={accountNumber}
+              onChange={(e) => setAccountNumber(e.target.value)}
+            />
+            {['bkash', 'nagad', 'rocket'].includes(paymentMethod) && (
+              <p className="text-xs text-gray-500 mt-1">সঠিক ফরম্যাট: 01XXXXXXXXX</p>
+            )}
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-400 mb-1">উত্তোলনের পরিমাণ (৳)</label>
+            <input
+              type="number"
+              className="w-full p-3 border border-gray-600 rounded-lg bg-gray-700 text-white focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+              placeholder="টাকার পরিমাণ লিখুন"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              min="300"
+              step="100"
+            />
+            <div className="flex justify-between text-xs text-gray-500 mt-1">
+              <span>ন্যূনতম: ৳৩০০</span>
+              <span>সর্বোচ্চ: ৳{availableBalance.toFixed(2)}</span>
+            </div>
+          </div>
+          
+          <button 
+            className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${
+              (!amount || amount < 300 || !accountNumber || loading || 
+               hasActiveBonus || 
+               wageringStatus === 'less-than-1x' ||
+               parseFloat(amount || 0) > availableBalance
+                ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                : 'bg-cyan-500 hover:bg-cyan-600 text-gray-900'
+  )}`}
+            onClick={handleWithdrawal}
+            disabled={
+              !amount || amount < 300 || !accountNumber || loading || 
+              hasActiveBonus || 
+              wageringStatus === 'less-than-1x' ||
+              parseFloat(amount || 0) > availableBalance
+            }
           >
-            <option value="bkash">bKash</option>
-            <option value="nagad">Nagad</option>
-            <option value="rocket">Rocket</option>
-          </select>
+            {loading ? (
+              <span className="flex items-center justify-center">
+                <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                প্রসেসিং...
+              </span>
+            ) : (
+              wageringStatus === 'less-than-1x' ? '১x ওয়েজারিং সম্পূর্ণ করুন' :
+              hasActiveBonus ? 'বোনাস বাতিল করুন' : 
+              'উত্তোলনের অনুরোধ করুন'
+            )}
+          </button>
         </div>
-        
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-400 mb-1">অ্যাকাউন্ট নম্বর</label>
-          <input
-            type="text"
-            className="w-full p-2 border border-gray-600 rounded bg-gray-800 text-white"
-            placeholder="আপনার অ্যাকাউন্ট নম্বর লিখুন"
-            value={accountNumber}
-            onChange={(e) => setAccountNumber(e.target.value)}
-          />
-          {paymentMethod === 'bkash' && (
-            <p className="text-xs text-gray-400 mt-1">bKash নাম্বার ফরম্যাট: 01XXXXXXXXX</p>
-          )}
-          {paymentMethod === 'nagad' && (
-            <p className="text-xs text-gray-400 mt-1">Nagad নাম্বার ফরম্যাট: 01XXXXXXXXX</p>
-          )}
-          {paymentMethod === 'rocket' && (
-            <p className="text-xs text-gray-400 mt-1">Rocket নাম্বার ফরম্যাট: 01XXXXXXXXX</p>
-          )}
-        </div>
-        
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-400 mb-1">পরিমাণ (৳)</label>
-          <input
-            type="number"
-            className="w-full p-2 border border-gray-600 rounded bg-gray-800 text-white"
-            placeholder="উত্তোলন পরিমাণ লিখুন"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            min="300"
-            step="100"
-          />
-          <div className="flex justify-between text-xs text-gray-400 mt-1">
-            <span>ন্যূনতম উত্তোলন: ৳300</span>
-            <span>সর্বোচ্চ উত্তোলন: ৳{availableBalance.toFixed(2)}</span>
-          </div>
-        </div>
-        
-        <button 
-          className="bg-cyan-500 hover:bg-cyan-600 text-gray-900 px-4 py-2 rounded w-full disabled:bg-gray-600 disabled:cursor-not-allowed"
-          onClick={handleWithdrawal}
-          disabled={!amount || amount < 300 || !accountNumber || loading || 
-                   (hasActiveBonus && !cancelBonus) || 
-                   parseFloat(amount || 0) > availableBalance}
-        >
-          {loading ? 'প্রসেস হচ্ছে...' : 'অনুরোধ করুন'}
-        </button>
       </div>
 
-      <div className="bg-gray-700 p-4 rounded shadow border border-gray-600">
-        <h4 className="font-medium mb-2">উত্তোলন শর্তাবলী</h4>
-        <ul className="text-sm text-gray-400 list-disc pl-5 space-y-1">
-          <li>ন্যূনতম উত্তোলন পরিমাণ ৳৩০০</li>
-          <li>প্রতিদিন সর্বোচ্চ ৩টি উত্তোলন অনুরোধ করা যাবে</li>
-          <li>বোনাস থাকা অবস্থায় উত্তোলন করা যাবে না</li>
-          <li>ডিপোজিটের ৩ গুণ ওয়েজার পূরণ না করলে ২০% কমিশন প্রযোজ্য</li>
-          <li>বোনাস বাতিল করলে ১৫০% জরিমানা প্রযোজ্য</li>
-          <li>উত্তোলন প্রসেসিং সময় ১০ মিনিট থেকে ২৪ ঘন্টা</li>
+      {/* শর্তাবলী */}
+      <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+        <h4 className="font-semibold text-gray-200 mb-3">উত্তোলনের শর্তাবলী</h4>
+        <ul className="text-sm text-gray-400 space-y-2">
+          <li className="flex items-start">
+            <span className="text-cyan-400 mr-2">•</span>
+            <span>ন্যূনতম উত্তোলনের পরিমাণ: <strong>৳৩০০</strong></span>
+          </li>
+          <li className="flex items-start">
+            <span className="text-cyan-400 mr-2">•</span>
+            <span>প্রতিদিন সর্বোচ্চ <strong>৩টি</strong> উত্তোলনের অনুরোধ করা যাবে</span>
+          </li>
+          <li className="flex items-start">
+            <span className="text-cyan-400 mr-2">•</span>
+            <span>সক্রিয় বোনাস থাকলে উত্তোলন করা যাবে না</span>
+          </li>
+          <li className="flex items-start">
+            <span className="text-cyan-400 mr-2">•</span>
+            <span>১x ওয়েজারিং সম্পূর্ণ না করলে উত্তোলন করা যাবে না</span>
+          </li>
+          <li className="flex items-start">
+            <span className="text-cyan-400 mr-2">•</span>
+            <span>৩x ওয়েজারিং সম্পূর্ণ না করলে <strong>২০% কমিশন</strong> প্রযোজ্য</span>
+          </li>
+          <li className="flex items-start">
+            <span className="text-cyan-400 mr-2">•</span>
+            <span>উত্তোলন প্রক্রিয়াকরণ সময়: <strong>১০ মিনিট থেকে ২৪ ঘন্টা</strong></span>
+          </li>
         </ul>
       </div>
 
-      <div className="bg-gray-700 p-4 rounded shadow border border-gray-600 mt-4">
-        <h4 className="font-medium mb-2">উত্তোলন ইতিহাস</h4>
-        <div className="overflow-x-auto">
-          <table className="min-w-full border border-gray-600">
-            <thead className="bg-gray-800">
-              <tr>
-                <th className="py-2 px-4 text-left text-sm border-b border-gray-600">তারিখ</th>
-                <th className="py-2 px-4 text-left text-sm border-b border-gray-600">পরিমাণ</th>
-                <th className="py-2 px-4 text-left text-sm border-b border-gray-600">পদ্ধতি</th>
-                <th className="py-2 px-4 text-left text-sm border-b border-gray-600">স্ট্যাটাস</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td colSpan="4" className="py-4 text-center text-gray-500">
-                  কোন উত্তোলন ইতিহাস পাওয়া যায়নি
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+      {/* উত্তোলন ইতিহাস */}
+      <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+        <h4 className="font-semibold text-gray-200 mb-3">আপনার উত্তোলনের ইতিহাস</h4>
+        
+        {historyLoading ? (
+          <div className="flex justify-center items-center h-32">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-cyan-500"></div>
+          </div>
+        ) : withdrawalHistory.length > 0 ? (
+          <div className="overflow-x-auto border-[1px] border-gray-700">
+            <table className="min-w-full divide-y divide-gray-700">
+              <thead className="bg-gray-700">
+                <tr>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">তারিখ</th>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">পরিমাণ</th>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">পদ্ধতি</th>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">স্ট্যাটাস</th>
+                </tr>
+              </thead>
+              <tbody className="bg-gray-800 divide-y divide-gray-700">
+                {withdrawalHistory.map((withdrawal) => (
+                  <tr key={withdrawal._id} className="hover:bg-gray-700/50">
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">
+                      {formatDate(withdrawal.createdAt)}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
+                      ৳{withdrawal.amount.toFixed(2)}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300 capitalize">
+                      {withdrawal.provider}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        withdrawal.status === 'completed' ? 'bg-green-500/20 text-green-400' :
+                        withdrawal.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
+                        withdrawal.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
+                        'bg-gray-500/20 text-gray-400'
+                      }`}>
+                        {withdrawal.status === 'completed' ? 'সম্পন্ন' : 
+                         withdrawal.status === 'pending' ? 'পেন্ডিং' :
+                         withdrawal.status === 'rejected' ? 'প্রত্যাখ্যাত' : withdrawal.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+           <div className='flex justify-center items-center mb-4'>
+           <div className='text-2xl border-[1px] border-gray-400 rounded-[50%] p-[10px] text-gray-400'>
+             <FaBangladeshiTakaSign/>
+           </div>
+           </div>
+            <h3 className="mt-2 text-sm font-medium text-gray-400">কোন উত্তোলনের ইতিহাস পাওয়া যায়নি</h3>
+            <p className="mt-1 text-xs text-gray-500">আপনি এখনো কোন উত্তোলনের অনুরোধ করেননি</p>
+          </div>
+        )}
       </div>
     </div>
   );
 };
-
 
 const BettingRecordTabContent = () => {
   const [timeRange, setTimeRange] = useState('today');
@@ -3096,54 +3415,64 @@ import {
 } from 'react-icons/fa';
 
 
+import {
+  FaUser as FaUserIcon
+} from 'react-icons/fa';
+
 const InviteFriendTabContent = () => {
   const [activeTab, setActiveTab] = useState('invite');
   const [copied, setCopied] = useState(false);
-  const [referralData, setReferralData] = useState(null);
+  const [referralData, setReferralData] = useState({
+    referralCode: '',
+    referredBy: null,
+    totalReferrals: 0,
+    activeReferrals: 0,
+    depositedReferrals: 0,
+    totalDepositsByReferrals: 0,
+    totalWithdrawalsByReferrals: 0,
+    referralEarnings: 0,
+    referredUsers: []
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const { userData, fetchUserData } = useUser();
-const API_BASE_URL = import.meta.env.VITE_API_KEY_Base_URL;
+  const { userData } = useUser();
+  const API_BASE_URL = import.meta.env.VITE_API_KEY_Base_URL;
 
   const referralLink = `${window.location.origin}/?refer_code=${userData?.referralCode || ''}`;
 
- useEffect(() => {
+  useEffect(() => {
     if (userData?._id && (activeTab === 'list' || activeTab === 'reward')) {
       fetchReferralData();
     }
-}, [activeTab, userData]);
+  }, [activeTab, userData]);
 
-const fetchReferralData = async () => {
-  try {
-    setLoading(true);
-    setError(null);
-    
-    const response = await axios.get(`${API_BASE_URL}/user/referred-users-details/${userData?._id}`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
-      // Add this to ensure you get JSON responses
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
+  const fetchReferralData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await axios.get(
+        `${API_BASE_URL}/user/referred-users-details/${userData?._id}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Accept': 'application/json'
+          }
+        }
+      );
+      console.log('Referral data response:', response.data);
+      if (response.data.success) {
+        setReferralData(response.data.data);
+      } else {
+        throw new Error(response.data.message || 'রেফারেল ডেটা লোড করতে ব্যর্থ হয়েছে');
       }
-    });
-
-    console.log('API Response:', response); // Inspect the full response
-    
-    if (typeof response.data === 'string' && response.data.includes('<!doctype html>')) {
-      throw new Error('Received HTML instead of JSON - check API endpoint');
+    } catch (err) {
+      console.error('রেফারেল ডেটা লোড করার সময় ত্রুটি:', err);
+      setError(err.response?.data?.message || err.message || 'রেফারেল ডেটা লোড করতে ব্যর্থ হয়েছে');
+    } finally {
+      setLoading(false);
     }
-    
-    setReferralData(response.data.data);
-  } catch (err) {
-    console.error('API Error:', err);
-    console.error('Error Response:', err.response);
-    setError(err.response?.data?.message || 'Failed to fetch referral data');
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(referralLink);
@@ -3153,7 +3482,7 @@ const fetchReferralData = async () => {
 
   const shareOnSocialMedia = (platform) => {
     let url = '';
-    const text = `Join ${window.location.hostname} with my referral link and get bonus: ${referralLink}`;
+    const text = `আমার রেফারেল লিঙ্ক ব্যবহার করে ${window.location.hostname}-এ যোগ দিন এবং বোনাস পান: ${referralLink}`;
     
     switch(platform) {
       case 'facebook':
@@ -3178,42 +3507,94 @@ const fetchReferralData = async () => {
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    return date.toLocaleDateString('bn-BD', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'BDT',
+    return new Intl.NumberFormat('bn-BD', {
       minimumFractionDigits: 2
-    }).format(amount || 0).replace('BDT', '৳');
+    }).format(amount || 0);
   };
 
+  const formatMobileNumber = (number) => {
+    if (!number || number.length < 7) return number;
+    const firstPart = number.substring(0, 4);
+    const lastPart = number.substring(number.length - 3);
+    return `${firstPart}****${lastPart}`;
+  };
+// -----------------------transfertomainbalance=========================
+const [feedback, setFeedback] = useState({ type: '', message: '', field: '' });
+const transfertomainbalance=async()=>{
+     const repsonse=await axios.put(`${API_BASE_URL}/user/transfer-refer-balance-to-main-balance`,{userId:userData._id});
+     console.log('Transfer response:', repsonse);
+     if(repsonse.data.success){
+       setFeedback({
+          type: 'success',
+          message: 'রেফারেল আয় সফলভাবে মূল ব্যালেন্সে স্থানান্তরিত হয়েছে।',
+          field: 'referralEarnings'
+        });
+       setReferralData(prevData => ({
+         ...prevData,
+         referralEarnings: 0
+       }));
+
+     }else{
+        setFeedback({
+            type: 'error',
+            message: repsonse.data.message || 'রেফারেল আয় স্থানান্তর করতে ব্যর্থ হয়েছে।',
+            field: 'referralEarnings'
+          }); 
+     }
+}
   return (
     <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-      <h3 className="text-lg font-semibold mb-4">বন্ধুর আমন্ত্রণ</h3>
+      <Toaster/>
+      <h3 className="text-lg font-semibold mb-4">বন্ধুকে আমন্ত্রণ করুন</h3>
+        {feedback.message && (
+        <div className={`mb-4 p-3 rounded ${feedback.type === 'success' ? 'bg-green-800 text-green-100' : 'bg-red-800 text-red-100'}`}>
+          {feedback.message}
+          <button 
+            onClick={() => setFeedback({ type: '', message: '', field: '' })}
+            className="float-right font-bold"
+          >
+            &times;
+          </button>
+        </div>
+      )}
       <div className="bg-gray-700 p-4 rounded shadow mb-4 border border-gray-600">
+        {/* ট্যাব নেভিগেশন */}
         <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
           <button
-            className={`px-3 py-1 rounded text-sm cursor-pointer whitespace-nowrap flex items-center gap-1 ${activeTab === 'invite' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'}`}
+            className={`px-3 py-1 rounded text-sm cursor-pointer whitespace-nowrap flex items-center gap-1 ${
+              activeTab === 'invite' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'
+            }`}
             onClick={() => setActiveTab('invite')}
           >
             <FaUser size={12} /> আমন্ত্রণ
           </button>
           <button
-            className={`px-3 py-1 rounded text-sm whitespace-nowrap cursor-pointer flex items-center gap-1 ${activeTab === 'list' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'}`}
+            className={`px-3 py-1 rounded text-sm whitespace-nowrap cursor-pointer flex items-center gap-1 ${
+              activeTab === 'list' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'
+            }`}
             onClick={() => setActiveTab('list')}
           >
             <FaHistory size={12} /> আমন্ত্রিত তালিকা
           </button>
           <button
-            className={`px-3 py-1 rounded text-sm whitespace-nowrap cursor-pointer flex items-center gap-1 ${activeTab === 'reward' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'}`}
+            className={`px-3 py-1 rounded text-sm whitespace-nowrap cursor-pointer flex items-center gap-1 ${
+              activeTab === 'reward' ? 'bg-cyan-500 text-gray-900' : 'bg-gray-800'
+            }`}
             onClick={() => setActiveTab('reward')}
           >
             <FaCoins size={12} /> পুরস্কার
           </button>
         </div>
 
+        {/* লোডিং স্টেট */}
         {loading && (
           <div className="text-center py-8">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-cyan-500"></div>
@@ -3221,12 +3602,14 @@ const fetchReferralData = async () => {
           </div>
         )}
 
+        {/* ত্রুটি স্টেট */}
         {error && (
           <div className="bg-red-900/50 border border-red-700 text-red-200 p-3 rounded mb-4 text-sm">
             {error}
           </div>
         )}
 
+        {/* আমন্ত্রণ ট্যাব কন্টেন্ট */}
         {!loading && activeTab === 'invite' && (
           <div>
             <div className="mb-4 p-4 bg-gray-800 rounded-lg border border-gray-600">
@@ -3243,7 +3626,7 @@ const fetchReferralData = async () => {
                   onClick={handleCopyLink}
                 >
                   {copied ? <FaCheck /> : <FaCopy />} 
-                  {copied ? 'কপি হয়েছে!' : 'কপি করুন'}
+                  {copied ? 'কপি হয়েছে!' : 'কপি করুন'}
                 </button>
               </div>
             </div>
@@ -3279,25 +3662,26 @@ const fetchReferralData = async () => {
             </div>
 
             <div className="p-4 bg-gray-800 rounded-lg border border-gray-600">
-              <h4 className="font-medium mb-2">আমন্ত্রণ নিয়ম</h4>
+              <h4 className="font-medium mb-2">রেফারেল নিয়ম</h4>
               <ul className="list-disc pl-5 text-sm text-gray-400 space-y-1">
-                <li>আপনার আমন্ত্রিত বন্ধুকে ন্যূনতম 100 টাকা ডিপোজিট করতে হবে</li>
-                <li>আপনার আমন্ত্রিত বন্ধুকে ন্যূনতম 3টি বেট প্লেস করতে হবে</li>
-                <li>আপনি পাবেন তাদের প্রথম ডিপোজিটের 25% বোনাস</li>
-                <li>আপনার বন্ধু পাবেন 50 টাকা সাইনআপ বোনাস</li>
+                <li>আপনার আমন্ত্রিত বন্ধুকে ন্যূনতম ১০০ টাকা ডিপোজিট করতে হবে</li>
+                <li>আপনার আমন্ত্রিত বন্ধুকে ন্যূনতম ৩টি বেট প্লেস করতে হবে</li>
+                <li>আপনি পাবেন তাদের প্রথম ডিপোজিটের ২৫% বোনাস</li>
+                <li>আপনার বন্ধু পাবেন ৫০ টাকা সাইনআপ বোনাস</li>
               </ul>
               
               <div className="mt-4 p-3 bg-gray-900 rounded border border-cyan-500/30">
                 <h5 className="font-medium text-cyan-400 mb-1">রেফারেল ইনকাম ক্যালকুলেশন</h5>
                 <p className="text-xs text-gray-300">
-                  রেফারেল ইনকাম = (মোট ডিপোজিট − মোট উত্তোলন − বর্তমান ব্যালেন্স) × 25%<br />
-                  <span className="text-gray-400">* এই হিসাবটি প্রতি সপ্তাহে একবার আপডেট করা হয়</span>
+                  রেফারেল ইনকাম = (মোট ডিপোজিট − মোট উত্তোলন − বর্তমান ব্যালেন্স) × ২৫%<br />
+                  <span className="text-gray-400">* এই হিসাব সাপ্তাহিক আপডেট করা হয়</span>
                 </p>
               </div>
             </div>
           </div>
         )}
 
+        {/* আমন্ত্রিত তালিকা ট্যাব কন্টেন্ট */}
         {!loading && activeTab === 'list' && (
           <div className="overflow-x-auto border-[1px] border-gray-600">
             <table className="min-w-full">
@@ -3305,22 +3689,24 @@ const fetchReferralData = async () => {
                 <tr>
                   <th className="py-2 px-4 text-left text-sm border-b border-gray-600">ব্যবহারকারীর নাম</th>
                   <th className="py-2 px-4 text-left text-sm border-b border-gray-600">যোগদানের তারিখ</th>
-                  <th className="py-2 px-4 text-left text-sm border-b border-gray-600">স্ট্যাটাস</th>
                   <th className="py-2 px-4 text-left text-sm border-b border-gray-600">পুরস্কার</th>
                 </tr>
               </thead>
               <tbody>
-                {referralData?.referredUsers?.length > 0 ? (
+                {referralData.referredUsers.length > 0 ? (
                   referralData.referredUsers.map((user) => (
                     <tr key={user.id} className="hover:bg-gray-800/50">
                       <td className="py-3 px-4 border-b border-gray-700">
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center">
-                            <FaUser size={12} />
+                            <FaUserIcon size={12} />
                           </div>
                           <div>
                             <p className="font-medium">{user.username}</p>
                             <p className="text-xs text-gray-400">{user.email}</p>
+                            {user.phone && (
+                              <p className="text-xs text-gray-400">{formatMobileNumber(user.phone)}</p>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -3330,15 +3716,8 @@ const fetchReferralData = async () => {
                           {formatDate(user.joinDate)}
                         </div>
                       </td>
-                      <td className="py-3 px-4 border-b border-gray-700">
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          user.hasDeposited ? 'bg-green-900/50 text-green-400' : 'bg-yellow-900/50 text-yellow-400'
-                        }`}>
-                          {user.hasDeposited ? 'ডিপোজিট করেছেন' : 'ডিপোজিট করেনি'}
-                        </span>
-                      </td>
                       <td className="py-3 px-4 border-b border-gray-700 font-medium">
-                        {user.hasDeposited ? formatCurrency(100 * 0.25) : '৳ 0.00'}
+                        {`৳${formatCurrency(user.earnedAmount)}` || '৳০.০০'}
                       </td>
                     </tr>
                   ))
@@ -3346,7 +3725,7 @@ const fetchReferralData = async () => {
                   <tr>
                     <td colSpan="4" className="py-8 text-center text-gray-500">
                       <div className="flex flex-col items-center justify-center">
-                        <FaUser className="text-gray-600 mb-2" size={24} />
+                        <FaUserIcon className="text-gray-600 mb-2" size={24} />
                         <p>কোন আমন্ত্রিত বন্ধু পাওয়া যায়নি</p>
                         <p className="text-sm mt-1">আপনার রেফারেল লিঙ্ক শেয়ার করে বন্ধুদের আমন্ত্রণ করুন</p>
                       </div>
@@ -3358,105 +3737,42 @@ const fetchReferralData = async () => {
           </div>
         )}
 
+        {/* পুরস্কার ট্যাব কন্টেন্ট */}
         {!loading && activeTab === 'reward' && (
           <div>
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div className="bg-gray-800 p-4 rounded shadow border border-gray-600">
                 <p className="text-sm text-gray-400">মোট আমন্ত্রণ</p>
                 <p className="text-xl font-bold text-cyan-400">
-                  {referralData?.totalReferrals || 0}
+                  {referralData.totalReferrals}
                 </p>
               </div>
               <div className="bg-gray-800 p-4 rounded shadow border border-gray-600">
-                <p className="text-sm text-gray-400">মোট পুরস্কার</p>
+                <p className="text-sm text-gray-400">মোট আয়</p>
                 <p className="text-xl font-bold text-cyan-400">
-                  {formatCurrency(referralData?.referralEarnings || 0)}
+                  ৳{formatCurrency(referralData.referralEarnings)}
                 </p>
               </div>
             </div>
-
-            <div className="mb-4 p-3 bg-gray-900 rounded border border-cyan-500/30">
-              <h5 className="font-medium text-cyan-400 mb-1">রেফারেল ইনকাম সারাংশ</h5>
-              <div className="grid grid-cols-3 gap-2 text-xs">
-                <div>
-                  <p className="text-gray-400">মোট ডিপোজিট</p>
-                  <p>{formatCurrency(referralData?.totalDepositsByReferrals || 0)}</p>
-                </div>
-                <div>
-                  <p className="text-gray-400">মোট উত্তোলন</p>
-                  <p>{formatCurrency(0)}</p>
-                </div>
-                <div>
-                  <p className="text-gray-400">বর্তমান ব্যালেন্স</p>
-                  <p>{formatCurrency(0)}</p>
-                </div>
+            {
+              referralData.referralEarnings > 999 ? <div>
+                <p className="text-sm text-gray-400 mb-2">আপনি 1000৳ রেফারেল করেছেন!</p>
+                <p className="text-sm text-gray-400 mb-2">আপনার রেফারেল বোনাস: ৳{formatCurrency(referralData.referralEarnings)}</p>
+                <p className="text-sm text-gray-400 mb-2">আপনার রেফারেল কোড: {referralData.referralCode}</p>
+                <p className="text-sm text-gray-400 mb-2">আপনি রেফারেল বোনাসের জন্য যোগ্য!</p>
+                <button className="px-[20px] py-[10px] rounded-[5px] bg-theme_color2 text-gray-800 text-[16px] cursor-pointer"onClick={transfertomainbalance}>মেইন বালেন্সে যোগ করুন</button>
+              </div>:<div>
+                <p className="text-sm text-gray-400 mb-2">আপনার রেফারেল কোড: {referralData.referralCode}</p>
+                <p className="text-sm text-gray-400 mb-2">আপনি এখনও রেফারেল বোনাসের জন্য যোগ্য নন।</p>  
               </div>
-              <div className="mt-2 pt-2 border-t border-gray-700">
-                <p className="text-sm">
-                  <span className="text-gray-400">আপনার রেফারেল ইনকাম: </span>
-                  <span className="font-bold">{formatCurrency(referralData?.referralEarnings || 0)}</span>
-                  <span className="text-gray-500 text-xs"> (25% of {formatCurrency(referralData?.totalDepositsByReferrals || 0)})</span>
-                </p>
-              </div>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="min-w-full border border-gray-600">
-                <thead className="bg-gray-800">
-                  <tr>
-                    <th className="py-2 px-4 text-left text-sm border-b border-gray-600">তারিখ</th>
-                    <th className="py-2 px-4 text-left text-sm border-b border-gray-600">আমন্ত্রিত বন্ধু</th>
-                    <th className="py-2 px-4 text-left text-sm border-b border-gray-600">পুরস্কার</th>
-                    <th className="py-2 px-4 text-left text-sm border-b border-gray-600">স্ট্যাটাস</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {referralData?.referredUsers?.filter(u => u.hasDeposited).length > 0 ? (
-                    referralData.referredUsers
-                      .filter(u => u.hasDeposited)
-                      .map((user) => (
-                        <tr key={user.id} className="hover:bg-gray-800/50">
-                          <td className="py-3 px-4 border-b border-gray-700 text-sm">
-                            {formatDate(user.joinDate)}
-                          </td>
-                          <td className="py-3 px-4 border-b border-gray-700">
-                            <div className="flex items-center gap-2">
-                              <div className="w-6 h-6 rounded-full bg-gray-600 flex items-center justify-center">
-                                <FaUser size={10} />
-                              </div>
-                              <span>{user.username}</span>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 border-b border-gray-700 font-medium">
-                            {formatCurrency(100 * 0.25)}
-                          </td>
-                          <td className="py-3 px-4 border-b border-gray-700">
-                            <span className="px-2 py-1 rounded-full text-xs bg-green-900/50 text-green-400">
-                              Paid
-                            </span>
-                          </td>
-                        </tr>
-                      ))
-                  ) : (
-                    <tr>
-                      <td colSpan="4" className="py-8 text-center text-gray-500">
-                        <div className="flex flex-col items-center justify-center">
-                          <FaCoins className="text-gray-600 mb-2" size={24} />
-                          <p>কোন পুরস্কার রেকর্ড পাওয়া যায়নি</p>
-                          <p className="text-sm mt-1">আপনার আমন্ত্রিত বন্ধুদের ডিপোজিটের পর পুরস্কার প্রদান করা হবে</p>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+            }
           </div>
         )}
       </div>
     </div>
   );
 };
+
 
 
 const MissionTabContent = () => {

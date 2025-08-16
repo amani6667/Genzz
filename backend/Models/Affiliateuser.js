@@ -342,4 +342,5 @@ function generateReferralCode(name) {
   return `${name.substring(0, 3)}${randomNum}`.toUpperCase();
 }
 
+
 module.exports = mongoose.model('AffiliateUser', AffiliateUserSchema);
